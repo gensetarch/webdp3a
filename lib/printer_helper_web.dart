@@ -23,8 +23,18 @@ void printItemLabelImpl(Item item, Room room) {
     }
 
     @media print {
-      html, body { width: 9cm; height: 12cm; }
-      .card { box-shadow: none !important; border-radius: 0 !important; }
+      html, body {
+        width: 9cm;
+        height: 12cm;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .card {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       .print-btn { display: none !important; }
     }
 
@@ -49,6 +59,8 @@ void printItemLabelImpl(Item item, Room room) {
       justify-content: space-between;
       overflow: hidden;
       position: relative;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
     /* Zigzag top decoration */
@@ -209,8 +221,18 @@ void printRoomLabelImpl(Room room) {
     }
 
     @media print {
-      html, body { width: 9cm; height: 12cm; }
-      .card { box-shadow: none !important; border-radius: 0 !important; }
+      html, body {
+        width: 9cm;
+        height: 12cm;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
+      .card {
+        box-shadow: none !important;
+        border-radius: 0 !important;
+        -webkit-print-color-adjust: exact !important;
+        print-color-adjust: exact !important;
+      }
       .print-btn { display: none !important; }
     }
 
@@ -235,6 +257,8 @@ void printRoomLabelImpl(Room room) {
       justify-content: space-between;
       overflow: hidden;
       position: relative;
+      -webkit-print-color-adjust: exact;
+      print-color-adjust: exact;
     }
 
     .zigzag-top { width: 100%; height: 28px; flex-shrink: 0; }
