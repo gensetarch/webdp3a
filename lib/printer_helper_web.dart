@@ -9,7 +9,7 @@ import 'models.dart';
 
 Future<void> printItemLabelImpl(Item item, Room room) async {
   final qrUrl =
-      'https://ariniarini2207-arch.github.io/webdp3a/?item=${item.id}';
+      'https://gensetarch.github.io/webdp3a/?item=${item.id}';
   final logoBase64 = await _loadLogoBase64();
   final qrSvg = _generateQrSvg(qrUrl, logoBase64);
 
@@ -200,7 +200,7 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
   <button class="print-btn" onclick="window.print(); setTimeout(()=>window.close(),800);">🖨️ Cetak</button>
   <script>
     // Load logo and overlay it on the QR code center
-    fetch('https://ariniarini2207-arch.github.io/webdp3a/assets/assets/logo_sulsel.png')
+    fetch('https://gensetarch.github.io/webdp3a/assets/assets/logo_sulsel.png')
       .then(r => r.blob())
       .then(blob => {
         const reader = new FileReader();
@@ -237,7 +237,7 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
 
 Future<void> printRoomLabelImpl(Room room) async {
   final qrUrl =
-      'https://ariniarini2207-arch.github.io/webdp3a/?room=${room.id}';
+      'https://gensetarch.github.io/webdp3a/?room=${room.id}';
   final logoBase64 = await _loadLogoBase64();
   final qrSvg = _generateQrSvg(qrUrl, logoBase64);
 
@@ -412,7 +412,7 @@ Future<void> printRoomLabelImpl(Room room) async {
   <button class="print-btn" onclick="window.print(); setTimeout(()=>window.close(),800);">🖨️ Cetak</button>
   <script>
     // Load logo and overlay it on the QR code center
-    fetch('https://ariniarini2207-arch.github.io/webdp3a/assets/assets/logo_sulsel.png')
+    fetch('https://gensetarch.github.io/webdp3a/assets/assets/logo_sulsel.png')
       .then(r => r.blob())
       .then(blob => {
         const reader = new FileReader();

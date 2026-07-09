@@ -9,7 +9,7 @@ import 'printer_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
 // URL GitHub Pages resmi untuk deploy
-const String kPublicBaseUrl = 'https://ariniarini2207-arch.github.io/webdp3a';
+const String kPublicBaseUrl = 'https://gensetarch.github.io/webdp3a';
 
 // Supabase Configuration - REPLACE WITH YOUR CREDENTIALS
 const String kSupabaseUrl = 'https://rxjixxgisdshfnkfyzaj.supabase.co';
