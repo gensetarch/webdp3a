@@ -3288,12 +3288,22 @@ class PublicItemScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final matchingItems = room.items.where((i) =>
+      i.jenisBarang.trim().toLowerCase() == item.jenisBarang.trim().toLowerCase() &&
+      i.merekModel.trim().toLowerCase() == item.merekModel.trim().toLowerCase()
+    ).toList();
+
+    final itemsToDisplay = matchingItems.isEmpty ? [item] : matchingItems;
+
     return Scaffold(
       backgroundColor: const Color(0xFFF9F9FB),
       appBar: AppBar(
         backgroundColor: const Color(0xFF111111),
         foregroundColor: Colors.white,
-        automaticallyImplyLeading: false,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: onBack,
+        ),
         title: const Text('Detail Registrasi Aset'),
       ),
       body: InteractiveViewer(
@@ -3307,73 +3317,82 @@ class PublicItemScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Zoomable Template Card
-                FittedBox(
-                  fit: BoxFit.contain,
-                  child: Container(
-                    width: 600, // Force internal rendering at full width
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(16),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.08),
-                          blurRadius: 24,
-                          offset: const Offset(0, 8),
+                ...itemsToDisplay.map((displayItem) {
+                  return Padding(
+                    padding: const EdgeInsets.only(bottom: 40.0),
+                    child: Column(
+                      children: [
+                        // Zoomable Template Card
+                        FittedBox(
+                          fit: BoxFit.contain,
+                          child: Container(
+                            width: 600, // Force internal rendering at full width
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(16),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.08),
+                                  blurRadius: 24,
+                                  offset: const Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: GensetCard(room: room, item: displayItem),
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Bottom info panel
+                        Container(
+                          width: 720,
+                          padding: const EdgeInsets.all(20),
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey[200]!),
+                          ),
+                          child: Row(
+                            children: [
+                              Expanded(
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: [
+                                    const Text(
+                                      'Informasi Label QR & Barcode Fisik',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold, fontSize: 16),
+                                    ),
+                                    const SizedBox(height: 6),
+                                    Text(
+                                      'Kode Barang: ${displayItem.kodeBarang}',
+                                      style: const TextStyle(
+                                        fontSize: 13,
+                                        color: Color(0xFF4A4A4A),
+                                        fontFamily: 'monospace',
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                    const SizedBox(height: 4),
+                                    const Text(
+                                      'Informasi di atas merupakan data resmi Dinas Pemberdayaan Perempuan, Perlindungan Anak, Pengendalian Penduduk dan Keluarga Berencana Provinsi Sulawesi Selatan.',
+                                      style: TextStyle(
+                                          fontSize: 11,
+                                          color: Color(0xFF555555),
+                                          height: 1.4,
+                                          fontWeight: FontWeight.w500),
+                                    ),
+                                  ],
+                                ),
+                              ),
+                              const SizedBox(width: 16),
+                              QRCodeWidget(data: generateItemUrl(displayItem.id), size: 70),
+                            ],
+                          ),
                         ),
                       ],
                     ),
-                    child: GensetCard(room: room, item: item),
-                  ),
-                ),
-                const SizedBox(height: 24),
-
-                // Bottom info panel
-                Container(
-                  width: 720,
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(12),
-                    border: Border.all(color: Colors.grey[200]!),
-                  ),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            const Text(
-                              'Informasi Label QR & Barcode Fisik',
-                              style: TextStyle(
-                                  fontWeight: FontWeight.bold, fontSize: 16),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              'Kode Barang: ${item.kodeBarang}',
-                              style: const TextStyle(
-                                fontSize: 13,
-                                color: Color(0xFF4A4A4A),
-                                fontFamily: 'monospace',
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            const Text(
-                              'Informasi di atas merupakan data resmi Dinas Pemberdayaan Perempuan, Perlindungan Anak, Pengendalian Penduduk dan Keluarga Berencana Provinsi Sulawesi Selatan.',
-                              style: TextStyle(
-                                  fontSize: 11,
-                                  color: Color(0xFF555555),
-                                  height: 1.4,
-                                  fontWeight: FontWeight.w500),
-                            ),
-                          ],
-                        ),
-                      ),
-                      const SizedBox(width: 16),
-                      QRCodeWidget(data: generateItemUrl(item.id), size: 70),
-                    ],
-                  ),
-                ),
+                  );
+                }).toList(),
               ],
             ),
           ),
