@@ -74,7 +74,11 @@ class QRCodeWidget extends StatelessWidget {
       ),
       backgroundColor: backgroundColor,
       padding: EdgeInsets.all(size * 0.06),
-      errorCorrectionLevel: QrErrorCorrectLevel.M, // Medium error correction level
+      errorCorrectionLevel: QrErrorCorrectLevel.H, // High error correction level needed when using a logo
+      embeddedImage: const AssetImage('assets/logo_sulsel.png'),
+      embeddedImageStyle: QrEmbeddedImageStyle(
+        size: Size(size * 0.25, size * 0.25),
+      ),
     );
   }
 }
