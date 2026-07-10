@@ -8,8 +8,7 @@ import 'package:qr/qr.dart';
 import 'models.dart';
 
 Future<void> printItemLabelImpl(Item item, Room room) async {
-  final qrUrl =
-      'https://gensetarch.github.io/webdp3a/?item=${item.id}';
+  final qrUrl = 'https://gensetarch.github.io/webdp3a/?item=${item.id}';
   final logoBase64 = await _loadLogoBase64();
   final qrSvg = _generateQrSvg(qrUrl, logoBase64);
 
@@ -236,8 +235,7 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
 }
 
 Future<void> printRoomLabelImpl(Room room) async {
-  final qrUrl =
-      'https://gensetarch.github.io/webdp3a/?room=${room.id}';
+  final qrUrl = 'https://gensetarch.github.io/webdp3a/?room=${room.id}';
   final logoBase64 = await _loadLogoBase64();
   final qrSvg = _generateQrSvg(qrUrl, logoBase64);
 

@@ -1370,97 +1370,157 @@ class DashboardScreen extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 // Header banner / Stats (Responsive)
-                MediaQuery.of(context).size.width > 600
-                    ? Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              const Text(
-                                'Daftar Ruangan Terdaftar',
-                                style: TextStyle(
-                                    fontSize: 22, fontWeight: FontWeight.w900),
-                              ),
-                              Text(
-                                'Total ruangan: ${rooms.length}',
-                                style: const TextStyle(
-                                    color: Color(0xFF4A4A4A),
-                                    fontWeight: FontWeight.bold),
-                              ),
-                            ],
-                          ),
-                          ElevatedButton.icon(
-                            onPressed: () => _showAddRoomDialog(context),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Tambah Ruangan'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFC9E12C),
-                              foregroundColor: const Color(0xFF111111),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 12),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ],
-                      )
-                    : Column(
-                        crossAxisAlignment: CrossAxisAlignment.stretch,
-                        children: [
-                          const Text(
-                            'Daftar Ruangan Terdaftar',
-                            style: TextStyle(
-                                fontSize: 22, fontWeight: FontWeight.w900),
-                          ),
-                          Text(
-                            'Total ruangan: ${rooms.length}',
-                            style: const TextStyle(
-                                color: Color(0xFF4A4A4A),
-                                fontWeight: FontWeight.bold),
-                          ),
-                          const SizedBox(height: 12),
-                          ElevatedButton.icon(
-                            onPressed: () => _showAddRoomDialog(context),
-                            icon: const Icon(Icons.add),
-                            label: const Text('Tambah Ruangan'),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFFC9E12C),
-                              foregroundColor: const Color(0xFF111111),
-                              padding: const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                            ),
-                          ),
-                        ],
+                Container(
+                  padding: const EdgeInsets.all(20),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.92),
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.white.withOpacity(0.6)),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.04),
+                        blurRadius: 16,
+                        offset: const Offset(0, 6),
                       ),
+                    ],
+                  ),
+                  child: MediaQuery.of(context).size.width > 600
+                      ? Row(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: [
+                            Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Row(
+                                  children: [
+                                    const Icon(Icons.door_sliding_outlined,
+                                        color: Color(0xFF2A9D8F), size: 24),
+                                    const SizedBox(width: 8),
+                                    const Text(
+                                      'Daftar Ruangan Terdaftar',
+                                      style: TextStyle(
+                                          fontSize: 22,
+                                          fontWeight: FontWeight.w900,
+                                          color: Color(0xFF2C3E50)),
+                                    ),
+                                  ],
+                                ),
+                                const SizedBox(height: 4),
+                                Text(
+                                  'Total ruangan: ${rooms.length}',
+                                  style: TextStyle(
+                                      color: Colors.grey[700],
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 13),
+                                ),
+                              ],
+                            ),
+                            ElevatedButton.icon(
+                              onPressed: () => _showAddRoomDialog(context),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Tambah Ruangan'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFC9E12C),
+                                foregroundColor: const Color(0xFF111111),
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 20, vertical: 12),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ],
+                        )
+                      : Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.door_sliding_outlined,
+                                    color: Color(0xFF2A9D8F), size: 24),
+                                const SizedBox(width: 8),
+                                const Expanded(
+                                  child: Text(
+                                    'Daftar Ruangan Terdaftar',
+                                    style: TextStyle(
+                                        fontSize: 22,
+                                        fontWeight: FontWeight.w900,
+                                        color: Color(0xFF2C3E50)),
+                                  ),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Total ruangan: ${rooms.length}',
+                              style: TextStyle(
+                                  color: Colors.grey[700],
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 13),
+                            ),
+                            const SizedBox(height: 16),
+                            ElevatedButton.icon(
+                              onPressed: () => _showAddRoomDialog(context),
+                              icon: const Icon(Icons.add),
+                              label: const Text('Tambah Ruangan'),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFFC9E12C),
+                                foregroundColor: const Color(0xFF111111),
+                                padding: const EdgeInsets.symmetric(vertical: 14),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                ),
                 const SizedBox(height: 24),
 
                 // Grid of rooms (unchanged)
                 Expanded(
                   child: rooms.isEmpty
                       ? Center(
-                          child: Column(
-                            mainAxisAlignment: MainAxisAlignment.center,
-                            children: [
-                              Icon(Icons.door_sliding_outlined,
-                                  size: 80, color: Colors.grey[300]),
-                              const SizedBox(height: 16),
-                              const Text(
-                                'Belum ada ruangan.',
-                                style: TextStyle(
-                                    fontSize: 18,
-                                    color: Colors.grey,
-                                    fontWeight: FontWeight.bold),
-                              ),
-                              const SizedBox(height: 8),
-                              const Text(
-                                'Buat ruangan baru untuk mulai menambahkan barang.',
-                                style: TextStyle(color: Colors.grey),
-                              ),
-                            ],
+                          child: Container(
+                            padding: const EdgeInsets.all(32),
+                            margin: const EdgeInsets.all(16),
+                            constraints: const BoxConstraints(maxWidth: 400),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.9),
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: Colors.white.withOpacity(0.6)),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withOpacity(0.04),
+                                  blurRadius: 16,
+                                  offset: const Offset(0, 6),
+                                ),
+                              ],
+                            ),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              children: [
+                                Icon(Icons.door_sliding_outlined,
+                                    size: 80,
+                                    color: const Color(0xFFE8776F).withOpacity(0.6)),
+                                const SizedBox(height: 16),
+                                const Text(
+                                  'Belum ada ruangan.',
+                                  style: TextStyle(
+                                      fontSize: 18,
+                                      color: Color(0xFF2C3E50),
+                                      fontWeight: FontWeight.bold),
+                                  textAlign: TextAlign.center,
+                                ),
+                                const SizedBox(height: 8),
+                                const Text(
+                                  'Buat ruangan baru untuk mulai menambahkan barang.',
+                                  style: TextStyle(color: Color(0xFF555555)),
+                                  textAlign: TextAlign.center,
+                                ),
+                              ],
+                            ),
                           ),
                         )
                       : GridView.builder(
@@ -2639,34 +2699,57 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     final rightPaneContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
+        Container(
+          padding: const EdgeInsets.all(20),
+          width: double.infinity,
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.92),
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(color: Colors.white.withOpacity(0.6)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 16,
+                offset: const Offset(0, 6),
+              ),
+            ],
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Icon(Icons.inventory_2_outlined,
-                        color: Color(0xFF2A9D8F), size: 24),
-                    const SizedBox(width: 8),
-                    const Text(
-                      'Daftar Barang',
+                    Row(
+                      children: [
+                        const Icon(Icons.inventory_2_outlined,
+                            color: Color(0xFF2A9D8F), size: 24),
+                        const SizedBox(width: 8),
+                        const Expanded(
+                          child: Text(
+                            'Daftar Barang',
+                            style: TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF2C3E50)),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Menampilkan ${_room.items.length} barang terdaftar',
                       style: TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w900,
-                          color: Color(0xFF2C3E50)),
+                          color: Colors.grey[700],
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600),
                     ),
                   ],
                 ),
-                const SizedBox(height: 4),
-                Text(
-                  'Menampilkan ${_room.items.length} barang terdaftar',
-                  style: TextStyle(color: Colors.grey[700], fontSize: 13),
-                ),
-              ],
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
         const SizedBox(height: 20),
 
