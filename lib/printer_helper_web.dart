@@ -214,19 +214,24 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
   <script>
     const baseUrl = 'https://gensetarch.github.io/webdp3a/assets/assets';
 
-    // Load logo_sulsel once — use for both QR center and corner (bypass cache using timestamp)
+    // Load logo_sulsel_transparent into corner logo (bypass cache)
+    fetch(baseUrl + '/logo_sulsel_transparent.png?t=' + new Date().getTime())
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const cornerImg = document.getElementById('corner-logo-img');
+          if (cornerImg) cornerImg.src = e.target.result;
+        };
+        reader.readAsDataURL(blob);
+      }).catch(() => {});
+
+    // Load original logo_sulsel into QR center (bypass cache)
     fetch(baseUrl + '/logo_sulsel.png?t=' + new Date().getTime())
       .then(r => r.blob())
       .then(blob => {
         const reader = new FileReader();
         reader.onload = function(e) {
-          const dataUrl = e.target.result;
-
-          // Set corner logo
-          const cornerImg = document.getElementById('corner-logo-img');
-          if (cornerImg) cornerImg.src = dataUrl;
-
-          // Set QR center logo
           const logoPlaceholder = document.getElementById('qr-logo-overlay');
           if (logoPlaceholder) {
             const img = document.createElementNS('http://www.w3.org/2000/svg','image');
@@ -235,7 +240,7 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
               const vb = svgEl.viewBox.baseVal;
               const logoSize = vb.width * 0.28;
               const logoOffset = (vb.width - logoSize) / 2;
-              img.setAttributeNS('http://www.w3.org/1999/xlink','href', dataUrl);
+              img.setAttributeNS('http://www.w3.org/1999/xlink','href', e.target.result);
               img.setAttribute('x', logoOffset + 2);
               img.setAttribute('y', logoOffset + 2);
               img.setAttribute('width', logoSize - 4);
@@ -448,19 +453,24 @@ Future<void> printRoomLabelImpl(Room room) async {
   <script>
     const baseUrl = 'https://gensetarch.github.io/webdp3a/assets/assets';
 
-    // Load logo_sulsel once — use for both QR center and corner (bypass cache using timestamp)
+    // Load logo_sulsel_transparent into corner logo (bypass cache)
+    fetch(baseUrl + '/logo_sulsel_transparent.png?t=' + new Date().getTime())
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const cornerImg = document.getElementById('corner-logo-img');
+          if (cornerImg) cornerImg.src = e.target.result;
+        };
+        reader.readAsDataURL(blob);
+      }).catch(() => {});
+
+    // Load original logo_sulsel into QR center (bypass cache)
     fetch(baseUrl + '/logo_sulsel.png?t=' + new Date().getTime())
       .then(r => r.blob())
       .then(blob => {
         const reader = new FileReader();
         reader.onload = function(e) {
-          const dataUrl = e.target.result;
-
-          // Set corner logo
-          const cornerImg = document.getElementById('corner-logo-img');
-          if (cornerImg) cornerImg.src = dataUrl;
-
-          // Set QR center logo
           const logoPlaceholder = document.getElementById('qr-logo-overlay');
           if (logoPlaceholder) {
             const img = document.createElementNS('http://www.w3.org/2000/svg','image');
@@ -469,7 +479,7 @@ Future<void> printRoomLabelImpl(Room room) async {
               const vb = svgEl.viewBox.baseVal;
               const logoSize = vb.width * 0.28;
               const logoOffset = (vb.width - logoSize) / 2;
-              img.setAttributeNS('http://www.w3.org/1999/xlink','href', dataUrl);
+              img.setAttributeNS('http://www.w3.org/1999/xlink','href', e.target.result);
               img.setAttribute('x', logoOffset + 2);
               img.setAttribute('y', logoOffset + 2);
               img.setAttribute('width', logoSize - 4);
