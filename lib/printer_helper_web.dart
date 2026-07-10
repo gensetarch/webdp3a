@@ -149,6 +149,17 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
       text-transform: uppercase;
     }
 
+    .corner-logo {
+      position: absolute;
+      top: 36px;
+      left: 12px;
+      width: 1.1cm;
+      height: 1.1cm;
+      object-fit: contain;
+      z-index: 10;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+    }
+
     .print-btn {
       position: fixed;
       bottom: 20px;
@@ -168,6 +179,9 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
 </head>
 <body>
   <div class="card">
+    <!-- Corner Logo DP3A -->
+    <img id="corner-logo-img" class="corner-logo" alt="Logo DP3A" />
+
     <!-- Zigzag Top -->
     <svg class="zigzag-top" viewBox="0 0 360 28" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
       <polygon points="0,0 360,0 360,28 330,10 300,28 270,10 240,28 210,10 180,28 150,10 120,28 90,10 60,28 30,10 0,28" fill="rgba(255,255,255,0.15)"/>
@@ -198,8 +212,10 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
 
   <button class="print-btn" onclick="window.print(); setTimeout(()=>window.close(),800);">🖨️ Cetak</button>
   <script>
-    // Load logo and overlay it on the QR code center
-    fetch('https://gensetarch.github.io/webdp3a/assets/assets/logo_sulsel.png')
+    const baseUrl = 'https://gensetarch.github.io/webdp3a/assets/assets';
+
+    // Load logo_sulsel into QR center
+    fetch(baseUrl + '/logo_sulsel.png')
       .then(r => r.blob())
       .then(blob => {
         const reader = new FileReader();
@@ -220,6 +236,18 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
               svgEl.appendChild(img);
             }
           }
+        };
+        reader.readAsDataURL(blob);
+      }).catch(() => {});
+
+    // Load logo_dp3a into top-left corner
+    fetch(baseUrl + '/logo_dp3a.png')
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const cornerImg = document.getElementById('corner-logo-img');
+          if (cornerImg) cornerImg.src = e.target.result;
         };
         reader.readAsDataURL(blob);
       }).catch(() => {});
@@ -362,6 +390,17 @@ Future<void> printRoomLabelImpl(Room room) async {
       text-transform: uppercase;
     }
 
+    .corner-logo {
+      position: absolute;
+      top: 36px;
+      left: 12px;
+      width: 1.1cm;
+      height: 1.1cm;
+      object-fit: contain;
+      z-index: 10;
+      filter: drop-shadow(0 1px 3px rgba(0,0,0,0.3));
+    }
+
     .print-btn {
       position: fixed;
       bottom: 20px;
@@ -381,6 +420,9 @@ Future<void> printRoomLabelImpl(Room room) async {
 </head>
 <body>
   <div class="card">
+    <!-- Corner Logo DP3A -->
+    <img id="corner-logo-img" class="corner-logo" alt="Logo DP3A" />
+
     <svg class="zigzag-top" viewBox="0 0 360 28" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
       <polygon points="0,0 360,0 360,28 330,10 300,28 270,10 240,28 210,10 180,28 150,10 120,28 90,10 60,28 30,10 0,28" fill="rgba(255,255,255,0.15)"/>
       <polygon points="0,0 360,0 360,20 345,6 315,22 285,6 255,22 225,6 195,22 165,6 135,22 105,6 75,22 45,6 15,22 0,8" fill="rgba(255,255,255,0.10)"/>
@@ -409,8 +451,10 @@ Future<void> printRoomLabelImpl(Room room) async {
 
   <button class="print-btn" onclick="window.print(); setTimeout(()=>window.close(),800);">🖨️ Cetak</button>
   <script>
-    // Load logo and overlay it on the QR code center
-    fetch('https://gensetarch.github.io/webdp3a/assets/assets/logo_sulsel.png')
+    const baseUrl = 'https://gensetarch.github.io/webdp3a/assets/assets';
+
+    // Load logo_sulsel into QR center
+    fetch(baseUrl + '/logo_sulsel.png')
       .then(r => r.blob())
       .then(blob => {
         const reader = new FileReader();
@@ -431,6 +475,18 @@ Future<void> printRoomLabelImpl(Room room) async {
               svgEl.appendChild(img);
             }
           }
+        };
+        reader.readAsDataURL(blob);
+      }).catch(() => {});
+
+    // Load logo_dp3a into top-left corner
+    fetch(baseUrl + '/logo_dp3a.png')
+      .then(r => r.blob())
+      .then(blob => {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const cornerImg = document.getElementById('corner-logo-img');
+          if (cornerImg) cornerImg.src = e.target.result;
         };
         reader.readAsDataURL(blob);
       }).catch(() => {});
