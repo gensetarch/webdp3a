@@ -1459,277 +1459,280 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           // Main content with padding
-          Padding(
-            padding: const EdgeInsets.all(24.0),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Header banner / Stats (Responsive)
-                Container(
-                  padding: const EdgeInsets.all(20),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.92),
-                    borderRadius: BorderRadius.circular(16),
-                    border: Border.all(color: Colors.white.withOpacity(0.6)),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.04),
-                        blurRadius: 16,
-                        offset: const Offset(0, 6),
-                      ),
-                    ],
-                  ),
-                  child: MediaQuery.of(context).size.width > 600
-                      ? Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Column(
-                              crossAxisAlignment: CrossAxisAlignment.start,
-                              children: [
-                                Row(
-                                  children: [
-                                    const Icon(Icons.door_sliding_outlined,
-                                        color: Color(0xFF2A9D8F), size: 24),
-                                    const SizedBox(width: 8),
-                                    const Text(
+          Center(
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 1200),
+              padding: const EdgeInsets.all(24.0),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header banner / Stats (Responsive)
+                  Container(
+                    padding: const EdgeInsets.all(20),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.92),
+                      borderRadius: BorderRadius.circular(16),
+                      border: Border.all(color: Colors.white.withOpacity(0.6)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: MediaQuery.of(context).size.width > 600
+                        ? Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Row(
+                                    children: [
+                                      const Icon(Icons.door_sliding_outlined,
+                                          color: Color(0xFF2A9D8F), size: 24),
+                                      const SizedBox(width: 8),
+                                      const Text(
+                                        'Daftar Ruangan Terdaftar',
+                                        style: TextStyle(
+                                            fontSize: 22,
+                                            fontWeight: FontWeight.w900,
+                                            color: Colors.black),
+                                      ),
+                                    ],
+                                  ),
+                                  const SizedBox(height: 4),
+                                  Text(
+                                    'Total ruangan: ${rooms.length}',
+                                    style: const TextStyle(
+                                        color: Colors.black87,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 13),
+                                  ),
+                                ],
+                              ),
+                              ElevatedButton.icon(
+                                onPressed: () => _showAddRoomDialog(context),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Tambah Ruangan'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFC9E12C),
+                                  foregroundColor: const Color(0xFF111111),
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 20, vertical: 12),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
+                                  ),
+                                ),
+                              ),
+                            ],
+                          )
+                        : Column(
+                            crossAxisAlignment: CrossAxisAlignment.stretch,
+                            children: [
+                              Row(
+                                children: [
+                                  const Icon(Icons.door_sliding_outlined,
+                                      color: Color(0xFF2A9D8F), size: 24),
+                                  const SizedBox(width: 8),
+                                  const Expanded(
+                                    child: Text(
                                       'Daftar Ruangan Terdaftar',
                                       style: TextStyle(
                                           fontSize: 22,
                                           fontWeight: FontWeight.w900,
                                           color: Colors.black),
                                     ),
-                                  ],
-                                ),
-                                const SizedBox(height: 4),
-                                Text(
-                                  'Total ruangan: ${rooms.length}',
-                                  style: const TextStyle(
-                                      color: Colors.black87,
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 13),
-                                ),
-                              ],
-                            ),
-                            ElevatedButton.icon(
-                              onPressed: () => _showAddRoomDialog(context),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Tambah Ruangan'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFC9E12C),
-                                foregroundColor: const Color(0xFF111111),
-                                padding: const EdgeInsets.symmetric(
-                                    horizontal: 20, vertical: 12),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
+                                  ),
+                                ],
                               ),
-                            ),
-                          ],
-                        )
-                      : Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            Row(
-                              children: [
-                                const Icon(Icons.door_sliding_outlined,
-                                    color: Color(0xFF2A9D8F), size: 24),
-                                const SizedBox(width: 8),
-                                const Expanded(
-                                  child: Text(
-                                    'Daftar Ruangan Terdaftar',
-                                    style: TextStyle(
-                                        fontSize: 22,
-                                        fontWeight: FontWeight.w900,
-                                        color: Colors.black),
+                              const SizedBox(height: 4),
+                              Text(
+                                'Total ruangan: ${rooms.length}',
+                                style: const TextStyle(
+                                    color: Colors.black87,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 13),
+                              ),
+                              const SizedBox(height: 16),
+                              ElevatedButton.icon(
+                                onPressed: () => _showAddRoomDialog(context),
+                                icon: const Icon(Icons.add),
+                                label: const Text('Tambah Ruangan'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFC9E12C),
+                                  foregroundColor: const Color(0xFF111111),
+                                  padding: const EdgeInsets.symmetric(vertical: 14),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(10),
                                   ),
                                 ),
-                              ],
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              'Total ruangan: ${rooms.length}',
-                              style: const TextStyle(
-                                  color: Colors.black87,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 13),
-                            ),
-                            const SizedBox(height: 16),
-                            ElevatedButton.icon(
-                              onPressed: () => _showAddRoomDialog(context),
-                              icon: const Icon(Icons.add),
-                              label: const Text('Tambah Ruangan'),
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: const Color(0xFFC9E12C),
-                                foregroundColor: const Color(0xFF111111),
-                                padding: const EdgeInsets.symmetric(vertical: 14),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10),
-                                ),
                               ),
-                            ),
-                          ],
-                        ),
-                ),
-                const SizedBox(height: 24),
+                            ],
+                          ),
+                  ),
+                  const SizedBox(height: 24),
 
-                // Grid of rooms (unchanged)
-                Expanded(
-                  child: rooms.isEmpty
-                      ? Center(
-                          child: Container(
-                            padding: const EdgeInsets.all(32),
-                            margin: const EdgeInsets.all(16),
-                            constraints: const BoxConstraints(maxWidth: 400),
-                            decoration: BoxDecoration(
-                              color: Colors.white.withOpacity(0.9),
-                              borderRadius: BorderRadius.circular(20),
-                              border: Border.all(color: Colors.white.withOpacity(0.6)),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.04),
-                                  blurRadius: 16,
-                                  offset: const Offset(0, 6),
-                                ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              mainAxisAlignment: MainAxisAlignment.center,
-                              children: [
-                                Icon(Icons.door_sliding_outlined,
-                                    size: 80,
-                                    color: const Color(0xFFE8776F).withOpacity(0.6)),
-                                const SizedBox(height: 16),
-                                const Text(
-                                  'Belum ada ruangan.',
-                                  style: TextStyle(
-                                      fontSize: 18,
-                                      color: Color(0xFF2C3E50),
-                                      fontWeight: FontWeight.bold),
-                                  textAlign: TextAlign.center,
-                                ),
-                                const SizedBox(height: 8),
-                                const Text(
-                                  'Buat ruangan baru untuk mulai menambahkan barang.',
-                                  style: TextStyle(color: Color(0xFF555555)),
-                                  textAlign: TextAlign.center,
-                                ),
-                              ],
-                            ),
-                          ),
-                        )
-                      : GridView.builder(
-                          gridDelegate:
-                              const SliverGridDelegateWithMaxCrossAxisExtent(
-                            maxCrossAxisExtent: 380,
-                            mainAxisExtent: 220,
-                            crossAxisSpacing: 20,
-                            mainAxisSpacing: 20,
-                          ),
-                          itemCount: rooms.length,
-                          itemBuilder: (context, index) {
-                            final room = rooms[index];
-                            return Card(
-                              elevation: 0,
-                              color: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                                side: BorderSide(color: Colors.grey[200]!),
+                  // Grid of rooms (unchanged)
+                  Expanded(
+                    child: rooms.isEmpty
+                        ? Center(
+                            child: Container(
+                              padding: const EdgeInsets.all(32),
+                              margin: const EdgeInsets.all(16),
+                              constraints: const BoxConstraints(maxWidth: 400),
+                              decoration: BoxDecoration(
+                                color: Colors.white.withOpacity(0.9),
+                                borderRadius: BorderRadius.circular(20),
+                                border: Border.all(color: Colors.white.withOpacity(0.6)),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: Colors.black.withOpacity(0.04),
+                                    blurRadius: 16,
+                                    offset: const Offset(0, 6),
+                                  ),
+                                ],
                               ),
-                              child: Padding(
-                                padding: const EdgeInsets.all(16.0),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    Row(
-                                      mainAxisAlignment:
-                                          MainAxisAlignment.spaceBetween,
-                                      children: [
-                                        Expanded(
-                                          child: Column(
-                                            crossAxisAlignment:
-                                                CrossAxisAlignment.start,
-                                            children: [
-                                              Text(
-                                                room.name,
-                                                style: const TextStyle(
-                                                  fontSize: 18,
-                                                  fontWeight: FontWeight.bold,
-                                                  color: Color(0xFF111111),
-                                                ),
-                                                overflow: TextOverflow.ellipsis,
-                                              ),
-                                              Text(
-                                                'Tahun ${room.year}',
-                                                style: const TextStyle(
-                                                    color: Color(0xFF555555),
-                                                    fontSize: 13,
-                                                    fontWeight:
-                                                        FontWeight.w500),
-                                              ),
-                                            ],
-                                          ),
-                                        ),
-                                        QRCodeWidget(
-                                            data: generateRoomUrl(room.id),
-                                            size: 55),
-                                      ],
-                                    ),
-                                    const Spacer(),
-                                    Text(
-                                      'Jumlah Aset: ${room.items.length} barang',
-                                      style: const TextStyle(
-                                          fontSize: 12,
-                                          fontWeight: FontWeight.w600),
-                                    ),
-                                    const SizedBox(height: 16),
-                                    Row(
-                                      mainAxisAlignment: MainAxisAlignment.end,
-                                      children: [
-                                        IconButton(
-                                          onPressed: () => _showEditRoomDialog(
-                                              context, room),
-                                          icon: const Icon(Icons.edit_outlined),
-                                          tooltip: 'Edit Ruangan',
-                                        ),
-                                        IconButton(
-                                          onPressed: () => _deleteRoom(room),
-                                          icon: const Icon(Icons.delete_outline,
-                                              color: Colors.red),
-                                          tooltip: 'Hapus Ruangan',
-                                        ),
-                                        const SizedBox(width: 8),
-                                        ElevatedButton(
-                                          onPressed: () {
-                                            Navigator.push(
-                                              context,
-                                              MaterialPageRoute(
-                                                builder: (context) =>
-                                                    RoomDetailsScreen(
-                                                  room: room,
-                                                  allRooms: rooms,
-                                                  onRoomsChanged: onRoomsChanged,
-                                                ),
-                                              ),
-                                            );
-                                          },
-                                          style: ElevatedButton.styleFrom(
-                                            backgroundColor:
-                                                const Color(0xFF111111),
-                                            foregroundColor: Colors.white,
-                                          ),
-                                          child: const Text('Buka'),
-                                        ),
-                                      ],
-                                    ),
-                                  ],
-                                ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Icon(Icons.door_sliding_outlined,
+                                      size: 80,
+                                      color: const Color(0xFFE8776F).withOpacity(0.6)),
+                                  const SizedBox(height: 16),
+                                  const Text(
+                                    'Belum ada ruangan.',
+                                    style: TextStyle(
+                                        fontSize: 18,
+                                        color: Color(0xFF2C3E50),
+                                        fontWeight: FontWeight.bold),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                  const SizedBox(height: 8),
+                                  const Text(
+                                    'Buat ruangan baru untuk mulai menambahkan barang.',
+                                    style: TextStyle(color: Color(0xFF555555)),
+                                    textAlign: TextAlign.center,
+                                  ),
+                                ],
                               ),
-                            );
-                          },
-                        ),
-                ),
-              ],
+                            ),
+                          )
+                        : GridView.builder(
+                            gridDelegate:
+                                const SliverGridDelegateWithMaxCrossAxisExtent(
+                              maxCrossAxisExtent: 380,
+                              mainAxisExtent: 220,
+                              crossAxisSpacing: 20,
+                              mainAxisSpacing: 20,
+                            ),
+                            itemCount: rooms.length,
+                            itemBuilder: (context, index) {
+                              final room = rooms[index];
+                              return Card(
+                                elevation: 0,
+                                color: Colors.white,
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                  side: BorderSide(color: Colors.grey[200]!),
+                                ),
+                                child: Padding(
+                                  padding: const EdgeInsets.all(16.0),
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Row(
+                                        mainAxisAlignment:
+                                            MainAxisAlignment.spaceBetween,
+                                        children: [
+                                          Expanded(
+                                            child: Column(
+                                              crossAxisAlignment:
+                                                  CrossAxisAlignment.start,
+                                              children: [
+                                                Text(
+                                                  room.name,
+                                                  style: const TextStyle(
+                                                    fontSize: 18,
+                                                    fontWeight: FontWeight.bold,
+                                                    color: Color(0xFF111111),
+                                                  ),
+                                                  overflow: TextOverflow.ellipsis,
+                                                ),
+                                                Text(
+                                                  'Tahun ${room.year}',
+                                                  style: const TextStyle(
+                                                      color: Color(0xFF555555),
+                                                      fontSize: 13,
+                                                      fontWeight:
+                                                          FontWeight.w500),
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                          QRCodeWidget(
+                                              data: generateRoomUrl(room.id),
+                                              size: 55),
+                                        ],
+                                      ),
+                                      const Spacer(),
+                                      Text(
+                                        'Jumlah Aset: ${room.items.length} barang',
+                                        style: const TextStyle(
+                                            fontSize: 12,
+                                            fontWeight: FontWeight.w600),
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Row(
+                                        mainAxisAlignment: MainAxisAlignment.end,
+                                        children: [
+                                          IconButton(
+                                            onPressed: () => _showEditRoomDialog(
+                                                context, room),
+                                            icon: const Icon(Icons.edit_outlined),
+                                            tooltip: 'Edit Ruangan',
+                                          ),
+                                          IconButton(
+                                            onPressed: () => _deleteRoom(room),
+                                            icon: const Icon(Icons.delete_outline,
+                                                color: Colors.red),
+                                            tooltip: 'Hapus Ruangan',
+                                          ),
+                                          const SizedBox(width: 8),
+                                          ElevatedButton(
+                                            onPressed: () {
+                                              Navigator.push(
+                                                context,
+                                                MaterialPageRoute(
+                                                  builder: (context) =>
+                                                      RoomDetailsScreen(
+                                                    room: room,
+                                                    allRooms: rooms,
+                                                    onRoomsChanged: onRoomsChanged,
+                                                  ),
+                                                ),
+                                              );
+                                            },
+                                            style: ElevatedButton.styleFrom(
+                                              backgroundColor:
+                                                  const Color(0xFF111111),
+                                              foregroundColor: Colors.white,
+                                            ),
+                                            child: const Text('Buka'),
+                                          ),
+                                        ],
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            },
+                          ),
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -3162,25 +3165,31 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
           // Main content with padding
           Positioned.fill(
             child: SingleChildScrollView(
-              padding: const EdgeInsets.all(24.0),
-              child: isMobile
-                  ? Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        sidebar,
-                        const SizedBox(height: 24),
-                        rightPaneContent,
-                      ],
-                    )
-                  : Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        sidebar,
-                        Expanded(
-                          child: rightPaneContent,
+              child: Center(
+                child: Container(
+                  constraints: const BoxConstraints(maxWidth: 1200),
+                  padding: const EdgeInsets.all(24.0),
+                  child: isMobile
+                      ? Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            sidebar,
+                            const SizedBox(height: 24),
+                            rightPaneContent,
+                          ],
+                        )
+                      : Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            sidebar,
+                            const SizedBox(width: 24),
+                            Expanded(
+                              child: rightPaneContent,
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
+                ),
+              ),
             ),
           ),
         ],
@@ -3248,155 +3257,158 @@ class PublicRoomScreen extends StatelessWidget {
         foregroundColor: Colors.white,
         title: Text('GENSET Ruangan: ${room.name}'),
       ),
-      body: Padding(
-        padding: const EdgeInsets.all(24.0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Container(
-              padding: const EdgeInsets.all(20),
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: Colors.grey[200]!),
+      body: Center(
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 720),
+          padding: const EdgeInsets.all(24.0),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Container(
+                padding: const EdgeInsets.all(20),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: Colors.grey[200]!),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            room.name,
+                            style: const TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.w900,
+                                color: Color(0xFF111111)),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'Tahun Registrasi Ruang: ${room.year}',
+                            style: const TextStyle(
+                                color: Color(0xFF555555),
+                                fontSize: 14,
+                                fontWeight: FontWeight.w500),
+                          ),
+                        ],
+                      ),
+                    ),
+                    QRCodeWidget(data: generateRoomUrl(room.id), size: 80),
+                  ],
+                ),
               ),
-              child: Row(
+              const SizedBox(height: 28),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          room.name,
-                          style: const TextStyle(
-                              fontSize: 24,
-                              fontWeight: FontWeight.w900,
-                              color: Color(0xFF111111)),
-                        ),
-                        const SizedBox(height: 4),
-                        Text(
-                          'Tahun Registrasi Ruang: ${room.year}',
-                          style: const TextStyle(
-                              color: Color(0xFF555555),
-                              fontSize: 14,
-                              fontWeight: FontWeight.w500),
-                        ),
-                      ],
+                  const Text(
+                    'Aset dalam Ruangan ini:',
+                    style: TextStyle(
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111111)),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFC9E12C).withOpacity(0.2),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Text(
+                      '${room.items.length} Barang',
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF111111),
+                      ),
                     ),
                   ),
-                  QRCodeWidget(data: generateRoomUrl(room.id), size: 80),
                 ],
               ),
-            ),
-            const SizedBox(height: 28),
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                const Text(
-                  'Aset dalam Ruangan ini:',
-                  style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF111111)),
-                ),
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFFC9E12C).withOpacity(0.2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Text(
-                    '${room.items.length} Barang',
-                    style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF111111),
-                    ),
-                  ),
-                ),
-              ],
-            ),
-            const SizedBox(height: 12),
-            Expanded(
-              child: room.items.isEmpty
-                  ? const Center(
-                      child: Text(
-                        'Tidak ada barang terdaftar di ruangan ini.',
-                        style: TextStyle(
-                            color: Colors.grey, fontStyle: FontStyle.italic),
+              const SizedBox(height: 12),
+              Expanded(
+                child: room.items.isEmpty
+                    ? const Center(
+                        child: Text(
+                          'Tidak ada barang terdaftar di ruangan ini.',
+                          style: TextStyle(
+                              color: Colors.grey, fontStyle: FontStyle.italic),
+                        ),
+                      )
+                    : ListView.builder(
+                        itemCount: groupedItems.length,
+                        itemBuilder: (context, index) {
+                          final group = groupedItems[index];
+                          final item = group.first;
+                          final count = group.length;
+                          return Card(
+                            color: Colors.white,
+                            elevation: 0,
+                            margin: const EdgeInsets.only(bottom: 12),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10),
+                              side: BorderSide(color: Colors.grey[200]!),
+                            ),
+                            child: ListTile(
+                              leading: Container(
+                                width: 40,
+                                height: 40,
+                                decoration: BoxDecoration(
+                                  color: const Color(0xFFC9E12C).withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: ClipRRect(
+                                  borderRadius: BorderRadius.circular(8),
+                                  child: item.fotoUrl.isNotEmpty
+                                      ? (item.fotoUrl.startsWith('http') ||
+                                              item.fotoUrl.startsWith('blob:') ||
+                                              item.fotoUrl.startsWith('data:'))
+                                          ? Image.network(
+                                              item.fotoUrl,
+                                              width: 40,
+                                              height: 40,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  const Icon(Icons.inventory_2,
+                                                      color: Color(0xFF111111)),
+                                            )
+                                          : Image.asset(
+                                              item.fotoUrl,
+                                              width: 40,
+                                              height: 40,
+                                              fit: BoxFit.cover,
+                                              errorBuilder: (context, error, stackTrace) =>
+                                                  const Icon(Icons.inventory_2,
+                                                      color: Color(0xFF111111)),
+                                            )
+                                      : const Icon(Icons.inventory_2,
+                                          color: Color(0xFF111111)),
+                                ),
+                              ),
+                              title: Text(
+                                item.jenisBarang,
+                                style: const TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    color: Color(0xFF111111)),
+                              ),
+                              subtitle: Text(
+                                count > 1
+                                    ? '${item.merekModel} • ${item.kodeBarang} • Jumlah: $count'
+                                    : '${item.merekModel} • ${item.kodeBarang}',
+                                style: const TextStyle(fontSize: 12),
+                              ),
+                              trailing: const Icon(Icons.chevron_right,
+                                  color: Colors.grey),
+                              onTap: () => onViewItem(item),
+                            ),
+                          );
+                        },
                       ),
-                    )
-                  : ListView.builder(
-                      itemCount: groupedItems.length,
-                      itemBuilder: (context, index) {
-                        final group = groupedItems[index];
-                        final item = group.first;
-                        final count = group.length;
-                        return Card(
-                          color: Colors.white,
-                          elevation: 0,
-                          margin: const EdgeInsets.only(bottom: 12),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(10),
-                            side: BorderSide(color: Colors.grey[200]!),
-                          ),
-                          child: ListTile(
-                            leading: Container(
-                              width: 40,
-                              height: 40,
-                              decoration: BoxDecoration(
-                                color: const Color(0xFFC9E12C).withOpacity(0.2),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: ClipRRect(
-                                borderRadius: BorderRadius.circular(8),
-                                child: item.fotoUrl.isNotEmpty
-                                    ? (item.fotoUrl.startsWith('http') ||
-                                            item.fotoUrl.startsWith('blob:') ||
-                                            item.fotoUrl.startsWith('data:'))
-                                        ? Image.network(
-                                            item.fotoUrl,
-                                            width: 40,
-                                            height: 40,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) =>
-                                                const Icon(Icons.inventory_2,
-                                                    color: Color(0xFF111111)),
-                                          )
-                                        : Image.asset(
-                                            item.fotoUrl,
-                                            width: 40,
-                                            height: 40,
-                                            fit: BoxFit.cover,
-                                            errorBuilder: (context, error, stackTrace) =>
-                                                const Icon(Icons.inventory_2,
-                                                    color: Color(0xFF111111)),
-                                          )
-                                    : const Icon(Icons.inventory_2,
-                                        color: Color(0xFF111111)),
-                              ),
-                            ),
-                            title: Text(
-                              item.jenisBarang,
-                              style: const TextStyle(
-                                  fontWeight: FontWeight.bold,
-                                  color: Color(0xFF111111)),
-                            ),
-                            subtitle: Text(
-                              count > 1
-                                  ? '${item.merekModel} • ${item.kodeBarang} • Jumlah: $count'
-                                  : '${item.merekModel} • ${item.kodeBarang}',
-                              style: const TextStyle(fontSize: 12),
-                            ),
-                            trailing: const Icon(Icons.chevron_right,
-                                color: Colors.grey),
-                            onTap: () => onViewItem(item),
-                          ),
-                        );
-                      },
-                    ),
-            ),
-          ],
+              ),
+            ],
+          ),
         ),
       ),
     );
