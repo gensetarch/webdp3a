@@ -560,190 +560,226 @@ class _LoginScreenState extends State<LoginScreen>
 
   @override
   Widget build(BuildContext context) {
-    final screenSize = MediaQuery.of(context).size;
-    final isWide = screenSize.width > 900;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final isWide = screenWidth > 800;
 
     return Scaffold(
       backgroundColor: _bgLight,
-      body: Container(
-        decoration: const BoxDecoration(
-          gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              Color(0xFFEDF2FB),
-              Color(0xFFF5F7FA),
-              Color(0xFFEAEEF8),
-            ],
-          ),
-        ),
-        child: Center(
-          child: SingleChildScrollView(
-            padding: EdgeInsets.symmetric(
-              horizontal: isWide ? 48 : 24,
-              vertical: 40,
+      body: Stack(
+        fit: StackFit.expand,
+        children: [
+          // ── Background: sama seperti dashboard ──
+          Positioned.fill(
+            child: Image.asset(
+              'assets/bg_empowerment.png',
+              fit: BoxFit.cover,
+              alignment: Alignment.center,
             ),
-            child: FadeTransition(
-              opacity: _fadeAnim,
-              child: SlideTransition(
-                position: _slideAnim,
-                child: isWide ? _buildWideLayout() : _buildNarrowLayout(),
+          ),
+          Positioned.fill(
+            child: DecoratedBox(
+              decoration: BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topCenter,
+                  end: Alignment.bottomCenter,
+                  colors: [
+                    const Color(0xFFF5F7FA).withOpacity(0.75),
+                    const Color(0xFFEDF2FB).withOpacity(0.82),
+                    const Color(0xFFEAEEF8).withOpacity(0.88),
+                  ],
+                ),
               ),
             ),
           ),
+
+          // ── Konten ──
+          isWide ? _buildWideLayout() : _buildNarrowScrollable(),
+        ],
+      ),
+    );
+  }
+
+  // ── Wide layout: sidebar kiri navy + form kanan, full screen ──
+  Widget _buildWideLayout() {
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: SlideTransition(
+        position: _slideAnim,
+        child: Row(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            // ── Panel Kiri: Informasi Dinas (sidebar) ──
+            Container(
+              width: 360,
+              padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
+              decoration: const BoxDecoration(
+                gradient: LinearGradient(
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1A2F5A), Color(0xFF1E3A6E)],
+                ),
+              ),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Logo Sulsel
+                  Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: Colors.white,
+                      borderRadius: BorderRadius.circular(18),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.25),
+                          blurRadius: 16,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(18),
+                      child: Image.asset('assets/logo_sulsel_original.png',
+                          fit: BoxFit.contain),
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  // Gold accent
+                  Container(
+                    height: 4,
+                    width: 52,
+                    decoration: BoxDecoration(
+                      color: _gold,
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  const Text(
+                    'Sistem Informasi\nManajemen Aset',
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      height: 1.25,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    'Dinas Pemberdayaan Perempuan,\nPerlindungan Anak, Pengendalian\nPenduduk dan Keluarga Berencana',
+                    style: TextStyle(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w500,
+                      color: Colors.white.withOpacity(0.72),
+                      height: 1.65,
+                    ),
+                  ),
+                  const SizedBox(height: 6),
+                  Text(
+                    'Provinsi Sulawesi Selatan',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.5),
+                    ),
+                  ),
+                  const SizedBox(height: 48),
+                  // GENSET Badge
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(
+                        color: _gold.withOpacity(0.45),
+                        width: 1,
+                      ),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        Icon(Icons.inventory_2_outlined,
+                            color: _goldLight, size: 18),
+                        const SizedBox(width: 10),
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'GENSET',
+                              style: TextStyle(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w800,
+                                color: _goldLight,
+                                letterSpacing: 1,
+                              ),
+                            ),
+                            Text(
+                              'Gerakan Sayang Aset',
+                              style: TextStyle(
+                                fontSize: 11,
+                                fontWeight: FontWeight.w400,
+                                color: _gold.withOpacity(0.85),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  Text(
+                    'Sistem pencatatan dan pengelolaan\naset inventaris kantor secara digital,\nterintegrasi dan akuntabel.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.white.withOpacity(0.55),
+                      height: 1.65,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '© ${DateTime.now().year} Dinas P3AKB\nProvinsi Sulawesi Selatan',
+                    style: TextStyle(
+                      fontSize: 10.5,
+                      color: Colors.white.withOpacity(0.35),
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // ── Panel Kanan: Form Login terpusat ──
+            Expanded(
+              child: Center(
+                child: SingleChildScrollView(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 60, vertical: 48),
+                  child: ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 400),
+                    child: _buildLoginCard(),
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  // ── Wide layout: side‑by‑side welcome + login ──
-  Widget _buildWideLayout() {
-    return Container(
-      constraints: const BoxConstraints(maxWidth: 900),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(24),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.12),
-            blurRadius: 60,
-            offset: const Offset(0, 20),
+  // ── Narrow layout: scrollable, terpusat ──
+  Widget _buildNarrowScrollable() {
+    return FadeTransition(
+      opacity: _fadeAnim,
+      child: SlideTransition(
+        position: _slideAnim,
+        child: Center(
+          child: SingleChildScrollView(
+            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
+            child: _buildNarrowLayout(),
           ),
-        ],
-      ),
-      child: Row(
-        mainAxisAlignment: MainAxisAlignment.center,
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Left — Welcome Panel (Navy Blue)
-          Container(
-            width: 380,
-            padding: const EdgeInsets.all(44),
-            decoration: const BoxDecoration(
-              gradient: LinearGradient(
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-                colors: [Color(0xFF1A2F5A), Color(0xFF243870)],
-              ),
-              borderRadius: BorderRadius.only(
-                topLeft: Radius.circular(24),
-                bottomLeft: Radius.circular(24),
-              ),
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                // Logo
-                Container(
-                  width: 72,
-                  height: 72,
-                  decoration: BoxDecoration(
-                    color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.2),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
-                      ),
-                    ],
-                  ),
-                  child: ClipRRect(
-                    borderRadius: BorderRadius.circular(16),
-                    child: Image.asset('assets/logo_sulsel_original.png',
-                        fit: BoxFit.contain),
-                  ),
-                ),
-                const SizedBox(height: 32),
-                // Gold accent line
-                Container(
-                  height: 4,
-                  width: 48,
-                  decoration: BoxDecoration(
-                    color: _gold,
-                    borderRadius: BorderRadius.circular(2),
-                  ),
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  'Sistem Informasi\nManajemen Aset',
-                  style: TextStyle(
-                    fontSize: 26,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    height: 1.3,
-                    letterSpacing: -0.3,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Dinas Pemberdayaan Perempuan,\nPerlindungan Anak, Pengendalian\nPenduduk dan Keluarga Berencana',
-                  style: TextStyle(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w500,
-                    color: Colors.white.withOpacity(0.75),
-                    height: 1.6,
-                  ),
-                ),
-                const SizedBox(height: 10),
-                Text(
-                  'Provinsi Sulawesi Selatan',
-                  style: TextStyle(
-                    fontSize: 12,
-                    fontWeight: FontWeight.w400,
-                    color: Colors.white.withOpacity(0.6),
-                  ),
-                ),
-                const SizedBox(height: 40),
-                // GENSET badge
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.1),
-                    borderRadius: BorderRadius.circular(10),
-                    border: Border.all(
-                      color: _gold.withOpacity(0.5),
-                      width: 1,
-                    ),
-                  ),
-                  child: Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.inventory_2_outlined,
-                          color: _gold, size: 16),
-                      const SizedBox(width: 8),
-                      Text(
-                        'GENSET — Gerakan Sayang Aset',
-                        style: TextStyle(
-                          fontSize: 12,
-                          fontWeight: FontWeight.w600,
-                          color: _goldLight,
-                          letterSpacing: 0.2,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  'Sistem pencatatan dan pengelolaan\naset inventaris kantor secara digital,\nterintegrasi dan akuntabel.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white.withOpacity(0.65),
-                    height: 1.6,
-                  ),
-                ),
-              ],
-            ),
-          ),
-          // Right — Login Card (White)
-          _buildLoginCard(
-            borderRadius: const BorderRadius.only(
-              topRight: Radius.circular(24),
-              bottomRight: Radius.circular(24),
-            ),
-          ),
-        ],
+        ),
       ),
     );
   }
@@ -842,25 +878,20 @@ class _LoginScreenState extends State<LoginScreen>
         Container(
           width: double.infinity,
           constraints: const BoxConstraints(maxWidth: 420),
-          child: _buildLoginCard(
-            borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(20),
-              bottomRight: Radius.circular(20),
-            ),
-          ),
+          child: _buildLoginCard(),
         ),
       ],
     );
   }
 
-  Widget _buildLoginCard({required BorderRadius borderRadius}) {
+  Widget _buildLoginCard() {
     final year = DateTime.now().year;
     return Container(
       width: 420,
       padding: const EdgeInsets.all(36),
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: borderRadius,
+        borderRadius: BorderRadius.circular(16),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.06),
