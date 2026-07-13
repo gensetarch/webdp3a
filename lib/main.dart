@@ -515,12 +515,13 @@ class _LoginScreenState extends State<LoginScreen>
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
 
-  // Warm, empowerment-themed color palette
-  static const Color _coral = Color(0xFFE8776F);
-  static const Color _rose = Color(0xFFD4567A);
-  static const Color _teal = Color(0xFF2A9D8F);
-  static const Color _warmCream = Color(0xFFFFF8F0);
-  static const Color _mustard = Color(0xFFE9C46A);
+  // Professional government-themed color palette
+  static const Color _navy = Color(0xFF1A2F5A);
+  static const Color _navyLight = Color(0xFF243870);
+  static const Color _gold = Color(0xFFCFA836);
+  static const Color _goldLight = Color(0xFFE8C155);
+  static const Color _slate = Color(0xFF4A5568);
+  static const Color _bgLight = Color(0xFFF5F7FA);
 
   @override
   void initState() {
@@ -563,47 +564,183 @@ class _LoginScreenState extends State<LoginScreen>
     final isWide = screenSize.width > 900;
 
     return Scaffold(
-      body: Stack(
-        fit: StackFit.expand,
+      backgroundColor: _bgLight,
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [
+              Color(0xFFEDF2FB),
+              Color(0xFFF5F7FA),
+              Color(0xFFEAEEF8),
+            ],
+          ),
+        ),
+        child: Center(
+          child: SingleChildScrollView(
+            padding: EdgeInsets.symmetric(
+              horizontal: isWide ? 48 : 24,
+              vertical: 40,
+            ),
+            child: FadeTransition(
+              opacity: _fadeAnim,
+              child: SlideTransition(
+                position: _slideAnim,
+                child: isWide ? _buildWideLayout() : _buildNarrowLayout(),
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  // ── Wide layout: side‑by‑side welcome + login ──
+  Widget _buildWideLayout() {
+    return Container(
+      constraints: const BoxConstraints(maxWidth: 900),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withOpacity(0.12),
+            blurRadius: 60,
+            offset: const Offset(0, 20),
+          ),
+        ],
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
+        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          // ── Background Image ──
-          Positioned.fill(
-            child: Image.asset(
-              'assets/bg_empowerment.png',
-              fit: BoxFit.cover,
-              alignment: Alignment.center,
-            ),
-          ),
-
-          // ── Gradient overlay for readability ──
-          Positioned.fill(
-            child: DecoratedBox(
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  begin: Alignment.topCenter,
-                  end: Alignment.bottomCenter,
-                  colors: [
-                    const Color(0xFFFFF8F0).withOpacity(0.35),
-                    const Color(0xFFE8776F).withOpacity(0.18),
-                    const Color(0xFF2A9D8F).withOpacity(0.22),
-                  ],
-                  stops: const [0.0, 0.5, 1.0],
-                ),
+          // Left — Welcome Panel (Navy Blue)
+          Container(
+            width: 380,
+            padding: const EdgeInsets.all(44),
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1A2F5A), Color(0xFF243870)],
+              ),
+              borderRadius: BorderRadius.only(
+                topLeft: Radius.circular(24),
+                bottomLeft: Radius.circular(24),
               ),
             ),
-          ),
-
-          // ── Content ──
-          Center(
-            child: SingleChildScrollView(
-              padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 40),
-              child: FadeTransition(
-                opacity: _fadeAnim,
-                child: SlideTransition(
-                  position: _slideAnim,
-                  child: isWide ? _buildWideLayout() : _buildNarrowLayout(),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Logo
+                Container(
+                  width: 72,
+                  height: 72,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.2),
+                        blurRadius: 12,
+                        offset: const Offset(0, 4),
+                      ),
+                    ],
+                  ),
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(16),
+                    child: Image.asset('assets/logo_sulsel_original.png',
+                        fit: BoxFit.contain),
+                  ),
                 ),
-              ),
+                const SizedBox(height: 32),
+                // Gold accent line
+                Container(
+                  height: 4,
+                  width: 48,
+                  decoration: BoxDecoration(
+                    color: _gold,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                const Text(
+                  'Sistem Informasi\nManajemen Aset',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    height: 1.3,
+                    letterSpacing: -0.3,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Dinas Pemberdayaan Perempuan,\nPerlindungan Anak, Pengendalian\nPenduduk dan Keluarga Berencana',
+                  style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                    color: Colors.white.withOpacity(0.75),
+                    height: 1.6,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  'Provinsi Sulawesi Selatan',
+                  style: TextStyle(
+                    fontSize: 12,
+                    fontWeight: FontWeight.w400,
+                    color: Colors.white.withOpacity(0.6),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                // GENSET badge
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(10),
+                    border: Border.all(
+                      color: _gold.withOpacity(0.5),
+                      width: 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      Icon(Icons.inventory_2_outlined,
+                          color: _gold, size: 16),
+                      const SizedBox(width: 8),
+                      Text(
+                        'GENSET — Gerakan Sayang Aset',
+                        style: TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                          color: _goldLight,
+                          letterSpacing: 0.2,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 16),
+                Text(
+                  'Sistem pencatatan dan pengelolaan\naset inventaris kantor secara digital,\nterintegrasi dan akuntabel.',
+                  style: TextStyle(
+                    fontSize: 12,
+                    color: Colors.white.withOpacity(0.65),
+                    height: 1.6,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          // Right — Login Card (White)
+          _buildLoginCard(
+            borderRadius: const BorderRadius.only(
+              topRight: Radius.circular(24),
+              bottomRight: Radius.circular(24),
             ),
           ),
         ],
@@ -611,195 +748,104 @@ class _LoginScreenState extends State<LoginScreen>
     );
   }
 
-  // ── Wide layout: side‑by‑side welcome + login ──
-  Widget _buildWideLayout() {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      crossAxisAlignment: CrossAxisAlignment.center,
-      children: [
-        // Left — Welcome Panel
-        Container(
-          width: 380,
-          padding: const EdgeInsets.all(40),
-          decoration: BoxDecoration(
-            gradient: const LinearGradient(
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-              colors: [Color(0xFFE8776F), Color(0xFFD4567A)],
-            ),
-            borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(28),
-              bottomLeft: Radius.circular(28),
-            ),
-            boxShadow: [
-              BoxShadow(
-                color: _rose.withOpacity(0.3),
-                blurRadius: 40,
-                offset: const Offset(-10, 20),
-              ),
-            ],
-          ),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              // Logo Sulsel
-              Container(
-                width: 64,
-                height: 64,
-                decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.2),
-                  borderRadius: BorderRadius.circular(16),
-                ),
-                child: ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.asset('assets/logo_sulsel_original.png',
-                      fit: BoxFit.contain),
-                ),
-              ),
-              const SizedBox(height: 24),
-              const Text(
-                'Selamat Datang',
-                style: TextStyle(
-                  fontSize: 28,
-                  fontWeight: FontWeight.w900,
-                  color: Colors.white,
-                  height: 1.2,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Dinas Pemberdayaan Perempuan,\nPerlindungan Anak, Pengendalian\nPenduduk dan Keluarga Berencana',
-                style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(0.92),
-                  height: 1.5,
-                ),
-              ),
-              const SizedBox(height: 20),
-              Container(
-                height: 3,
-                width: 50,
-                decoration: BoxDecoration(
-                  color: _mustard,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(height: 20),
-              Text(
-                '✿ GENSET — Gerakan Sayang Aset',
-                style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w600,
-                  color: Colors.white.withOpacity(0.85),
-                  letterSpacing: 0.3,
-                ),
-              ),
-              const SizedBox(height: 8),
-              Text(
-                'Sistem pencatatan dan pengelolaan aset\nuntuk mendukung pelayanan terbaik bagi\nperempuan dan anak di Sulawesi Selatan.',
-                style: TextStyle(
-                  fontSize: 12.5,
-                  color: Colors.white.withOpacity(0.9),
-                  height: 1.6,
-                ),
-              ),
-            ],
-          ),
-        ),
-        // Right — Login Card
-        _buildLoginCard(
-          borderRadius: const BorderRadius.only(
-            topRight: Radius.circular(28),
-            bottomRight: Radius.circular(28),
-          ),
-        ),
-      ],
-    );
-  }
-
   // ── Narrow layout: stacked ──
   Widget _buildNarrowLayout() {
     return Column(
       mainAxisAlignment: MainAxisAlignment.center,
+      mainAxisSize: MainAxisSize.min,
       children: [
-        // Welcome banner (compact)
+        // Welcome banner (compact — navy blue)
         Container(
           width: double.infinity,
           constraints: const BoxConstraints(maxWidth: 420),
-          padding: const EdgeInsets.all(28),
+          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 28),
           decoration: BoxDecoration(
             gradient: const LinearGradient(
               begin: Alignment.topLeft,
               end: Alignment.bottomRight,
-              colors: [Color(0xFFE8776F), Color(0xFFD4567A)],
+              colors: [Color(0xFF1A2F5A), Color(0xFF243870)],
             ),
             borderRadius: const BorderRadius.only(
-              topLeft: Radius.circular(28),
-              topRight: Radius.circular(28),
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
             ),
             boxShadow: [
               BoxShadow(
-                color: _rose.withOpacity(0.2),
-                blurRadius: 30,
-                offset: const Offset(0, -5),
+                color: _navy.withOpacity(0.25),
+                blurRadius: 20,
+                offset: const Offset(0, -4),
               ),
             ],
           ),
-          child: Column(
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.center,
             children: [
-              Row(
-                children: [
-                  Container(
-                    width: 48,
-                    height: 48,
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.2),
-                      borderRadius: BorderRadius.circular(12),
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(12),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withOpacity(0.15),
+                      blurRadius: 8,
+                      offset: const Offset(0, 3),
                     ),
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12),
-                      child: Image.asset('assets/logo_sulsel_original.png',
-                          fit: BoxFit.contain),
+                  ],
+                ),
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.asset('assets/logo_sulsel_original.png',
+                      fit: BoxFit.contain),
+                ),
+              ),
+              const SizedBox(width: 14),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      height: 3,
+                      width: 32,
+                      decoration: BoxDecoration(
+                        color: _gold,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        const Text(
-                          'Selamat Datang',
-                          style: TextStyle(
-                            fontSize: 20,
-                            fontWeight: FontWeight.w900,
-                            color: Colors.white,
-                          ),
-                        ),
-                        Text(
-                          'Dinas Pemberdayaan Perempuan, Perlindungan Anak, Pengendalian Penduduk dan Keluarga Berencana',
-                          style: TextStyle(
-                            fontSize: 11.5,
-                            fontWeight: FontWeight.w600,
-                            color: Colors.white,
-                          ),
-                        ),
-                      ],
+                    const SizedBox(height: 6),
+                    const Text(
+                      'Sistem Manajemen Aset',
+                      style: TextStyle(
+                        fontSize: 15,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: -0.2,
+                      ),
                     ),
-                  ),
-                ],
+                    const SizedBox(height: 3),
+                    Text(
+                      'Dinas P3AKB — Prov. Sulawesi Selatan',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w400,
+                        color: Colors.white.withOpacity(0.7),
+                      ),
+                    ),
+                  ],
+                ),
               ),
             ],
           ),
         ),
         // Login card
         Container(
+          width: double.infinity,
           constraints: const BoxConstraints(maxWidth: 420),
           child: _buildLoginCard(
             borderRadius: const BorderRadius.only(
-              bottomLeft: Radius.circular(28),
-              bottomRight: Radius.circular(28),
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(20),
             ),
           ),
         ),
@@ -808,28 +854,23 @@ class _LoginScreenState extends State<LoginScreen>
   }
 
   Widget _buildLoginCard({required BorderRadius borderRadius}) {
+    final year = DateTime.now().year;
     return Container(
-      width: 400,
+      width: 420,
       padding: const EdgeInsets.all(36),
       decoration: BoxDecoration(
-        // Glassmorphism effect
-        color: Colors.white.withOpacity(0.92),
+        color: Colors.white,
         borderRadius: borderRadius,
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.08),
+            color: Colors.black.withOpacity(0.06),
             blurRadius: 40,
-            offset: const Offset(0, 20),
-          ),
-          BoxShadow(
-            color: _teal.withOpacity(0.08),
-            blurRadius: 60,
-            offset: const Offset(10, 30),
+            offset: const Offset(0, 16),
           ),
         ],
         border: Border.all(
-          color: Colors.white.withOpacity(0.6),
-          width: 1.5,
+          color: const Color(0xFFE8ECF4),
+          width: 1,
         ),
       ),
       child: Form(
@@ -838,105 +879,68 @@ class _LoginScreenState extends State<LoginScreen>
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
-            // GENSET Branding
+            // Header section
             Row(
-              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding:
-                      const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                  padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Color(0xFFE8776F), Color(0xFFD4567A)],
+                    color: const Color(0xFFEFF3FC),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.admin_panel_settings_outlined,
+                      color: Color(0xFF1A2F5A), size: 22),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Akses Administrator',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: Color(0xFF1A2F5A),
+                        letterSpacing: -0.2,
+                      ),
                     ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: _coral.withOpacity(0.3),
-                        blurRadius: 12,
-                        offset: const Offset(0, 4),
+                    Text(
+                      'Panel pengelolaan aset GENSET',
+                      style: TextStyle(
+                        fontSize: 11.5,
+                        color: Colors.grey[500],
+                        fontWeight: FontWeight.w400,
                       ),
-                    ],
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.favorite, color: Colors.white, size: 18),
-                      SizedBox(width: 6),
-                      Text(
-                        'GENSET',
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w900,
-                          color: Colors.white,
-                          letterSpacing: 1,
-                        ),
-                      ),
-                    ],
-                  ),
+                    ),
+                  ],
                 ),
               ],
             ),
-            const SizedBox(height: 10),
-            const Text(
-              'Gerakan Sayang Aset',
-              style: TextStyle(
-                fontSize: 12,
-                color: Color(0xFF4A4A4A),
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.5,
-              ),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 28),
 
-            // Divider with heart
-            Row(
-              children: [
-                Expanded(
-                    child:
-                        Container(height: 1, color: const Color(0xFFEEE0E0))),
-                Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 12),
-                  child: Icon(Icons.favorite,
-                      size: 14, color: _coral.withOpacity(0.4)),
-                ),
-                Expanded(
-                    child:
-                        Container(height: 1, color: const Color(0xFFEEE0E0))),
-              ],
-            ),
+            const SizedBox(height: 24),
+            Container(height: 1, color: const Color(0xFFEEF2F8)),
             const SizedBox(height: 24),
 
+            // Password label
             const Text(
-              'Login Admin',
+              'Kata Sandi',
               style: TextStyle(
-                fontSize: 18,
-                fontWeight: FontWeight.w800,
-                color: Color(0xFF333333),
-              ),
-              textAlign: TextAlign.start,
-            ),
-            const SizedBox(height: 6),
-            Text(
-              'Masukkan password untuk mengakses panel admin',
-              style: TextStyle(
-                fontSize: 12.5,
-                color: Color(0xFF4A4A4A),
-                height: 1.4,
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF344054),
               ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: 8),
 
-            // Password Input — styled warmly
+            // Password Input — clean professional style
             TextFormField(
               controller: _passwordController,
               obscureText: _obscurePassword,
               decoration: InputDecoration(
-                labelText: 'Password',
-                labelStyle: TextStyle(color: Colors.grey[500], fontSize: 14),
-                prefixIcon: Icon(Icons.lock_outline,
-                    color: _coral.withOpacity(0.7), size: 20),
+                hintText: 'Masukkan kata sandi admin',
+                hintStyle: TextStyle(color: Colors.grey[400], fontSize: 14),
+                prefixIcon: Icon(Icons.lock_outline_rounded,
+                    color: _slate, size: 20),
                 suffixIcon: IconButton(
                   icon: Icon(
                     _obscurePassword
@@ -952,25 +956,29 @@ class _LoginScreenState extends State<LoginScreen>
                   },
                 ),
                 filled: true,
-                fillColor: const Color(0xFFFFF5F3),
+                fillColor: const Color(0xFFF8FAFC),
                 border: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFf0d4d0)),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFFD0D8E8)),
                 ),
                 enabledBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: const BorderSide(color: Color(0xFFf0d4d0)),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFFD0D8E8)),
                 ),
                 focusedBorder: OutlineInputBorder(
-                  borderRadius: BorderRadius.circular(14),
-                  borderSide: BorderSide(color: _coral, width: 1.5),
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: BorderSide(color: _navy, width: 1.5),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderRadius: BorderRadius.circular(10),
+                  borderSide: const BorderSide(color: Color(0xFFE53E3E)),
                 ),
                 contentPadding:
-                    const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+                    const EdgeInsets.symmetric(vertical: 14, horizontal: 14),
               ),
               validator: (value) {
                 if (value == null || value.isEmpty) {
-                  return 'Silakan masukkan password admin';
+                  return 'Silakan masukkan kata sandi admin';
                 }
                 return null;
               },
@@ -981,44 +989,47 @@ class _LoginScreenState extends State<LoginScreen>
               const SizedBox(height: 12),
               Container(
                 padding:
-                    const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                    const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
                 decoration: BoxDecoration(
-                  color: const Color(0xFFFFF0F0),
+                  color: const Color(0xFFFFF5F5),
                   borderRadius: BorderRadius.circular(8),
-                  border: Border.all(color: const Color(0xFFFFD0D0)),
+                  border: Border.all(color: const Color(0xFFFEB2B2)),
                 ),
                 child: Row(
                   children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        color: Colors.red, size: 18),
+                    const Icon(Icons.error_outline_rounded,
+                        color: Color(0xFFE53E3E), size: 18),
                     const SizedBox(width: 8),
                     Expanded(
                       child: Text(
                         _errorMessage!,
                         style: const TextStyle(
-                            color: Colors.red,
-                            fontSize: 12.5,
-                            fontWeight: FontWeight.w600),
+                          color: Color(0xFFE53E3E),
+                          fontSize: 12.5,
+                          fontWeight: FontWeight.w500,
+                        ),
                       ),
                     ),
                   ],
                 ),
               ),
             ],
-            const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-            // Login Button — warm gradient
+            // Login Button — Navy Blue
             Container(
               decoration: BoxDecoration(
                 gradient: const LinearGradient(
-                  colors: [Color(0xFFE8776F), Color(0xFFD4567A)],
+                  begin: Alignment.topLeft,
+                  end: Alignment.bottomRight,
+                  colors: [Color(0xFF1A2F5A), Color(0xFF2D4A8A)],
                 ),
-                borderRadius: BorderRadius.circular(14),
+                borderRadius: BorderRadius.circular(10),
                 boxShadow: [
                   BoxShadow(
-                    color: _coral.withOpacity(0.35),
-                    blurRadius: 16,
-                    offset: const Offset(0, 6),
+                    color: _navy.withOpacity(0.3),
+                    blurRadius: 14,
+                    offset: const Offset(0, 5),
                   ),
                 ],
               ),
@@ -1028,10 +1039,10 @@ class _LoginScreenState extends State<LoginScreen>
                   backgroundColor: Colors.transparent,
                   foregroundColor: Colors.white,
                   shadowColor: Colors.transparent,
-                  padding: const EdgeInsets.symmetric(vertical: 18),
+                  padding: const EdgeInsets.symmetric(vertical: 16),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
-                    borderRadius: BorderRadius.circular(14),
+                    borderRadius: BorderRadius.circular(10),
                   ),
                 ),
                 child: const Row(
@@ -1040,51 +1051,63 @@ class _LoginScreenState extends State<LoginScreen>
                     Icon(Icons.login_rounded, size: 18),
                     SizedBox(width: 8),
                     Text(
-                      'Masuk ke Panel',
-                      style:
-                          TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                      'Masuk ke Panel Admin',
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 14,
+                        letterSpacing: 0.2,
+                      ),
                     ),
                   ],
                 ),
               ),
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 12),
+
+            // QR Scan Button — gold outline
             OutlinedButton(
               onPressed: widget.onScanPressed,
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFF2A9D8F), width: 1.5),
-                foregroundColor: const Color(0xFF2A9D8F),
-                padding: const EdgeInsets.symmetric(vertical: 18),
+                side: BorderSide(color: _gold, width: 1.5),
+                foregroundColor: _navy,
+                padding: const EdgeInsets.symmetric(vertical: 16),
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
               child: const Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.qr_code_scanner, size: 18),
+                  Icon(Icons.qr_code_scanner_rounded, size: 18),
                   SizedBox(width: 8),
                   Text(
                     'Pindai QR / Barcode Aset',
-                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 15),
+                    style: TextStyle(
+                      fontWeight: FontWeight.w600,
+                      fontSize: 14,
+                      letterSpacing: 0.2,
+                    ),
                   ),
                 ],
               ),
             ),
 
-            const SizedBox(height: 20),
+            const SizedBox(height: 24),
+            Container(height: 1, color: const Color(0xFFEEF2F8)),
+            const SizedBox(height: 16),
+
             // Footer
             Text(
-              '© ${2026} Dinas Pemberdayaan Perempuan, Perlindungan Anak,\nPengendalian Penduduk dan Keluarga Berencana\nProvinsi Sulawesi Selatan',
+              '© $year Dinas P3AKB Provinsi Sulawesi Selatan',
               style: TextStyle(
-                fontSize: 10,
+                fontSize: 10.5,
                 color: Colors.grey[400],
                 height: 1.5,
+                letterSpacing: 0.1,
               ),
               textAlign: TextAlign.center,
             ),
-
           ],
         ),
       ),
