@@ -94438,9 +94438,8 @@ i=l.d.e.length
 if(i===0){i=A.a5(217,B.f.n()>>>16&255,B.f.n()>>>8&255,B.f.n()&255)
 h=A.bl(20)
 h=A.eJ(A.bs(k,A.bR(A.b([A.jH(B.lL,A.a5(B.d.aI(127.5),B.z.n()>>>16&255,B.z.n()>>>8&255,B.z.n()&255),k,70),B.cF,B.a3u,B.cj,A.Bf(B.lO,B.a3g,new A.aBK(l),A.jB(k,k,B.H,k,k,k,k,k,k,B.f,k,k,B.l0,k,new A.c6(A.bl(10),B.q),k,k,k,k,k))],s),B.w,B.bs,B.aF),B.m,k,k,new A.bv(i,k,k,h,k,k,B.D),k,k,B.pG,k),k,k)
-i=h}else{h=j?B.Tt:k
-h=A.aIg(new A.aBL(l,j),i,h,j)
-i=h}m=A.bR(A.b([f,B.cG,i],s),B.W,B.n,B.p)
+i=h}else i=A.aIg(new A.aBL(l,j),i,B.Tt,!0)
+m=A.bR(A.b([f,B.cG,i],s),B.W,B.n,B.p)
 i=A.zF(k,B.aq,k,B.f,k,A.bc("Detail Ruangan: "+l.d.b,k,k,k,B.d4,k,k))
 f=A.oB(0,A.o0("assets/bg_empowerment.png",B.N,k,B.cp,k,k))
 h=A.oB(0,A.nK(k,new A.bv(k,k,k,k,k,new A.jN(B.hh,B.hg,B.c4,A.b([A.a5(102,B.bW.n()>>>16&255,B.bW.n()>>>8&255,B.bW.n()&255),A.a5(51,B.z.n()>>>16&255,B.z.n()>>>8&255,B.z.n()&255),A.a5(51,B.H.n()>>>16&255,B.H.n()>>>8&255,B.H.n()&255)],t.t_),B.lU,k),B.D),B.cc))
