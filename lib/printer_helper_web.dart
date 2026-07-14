@@ -80,31 +80,26 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
       flex-shrink: 0;
     }
 
-    .title-row {
-      display: flex;
-      flex-direction: row;
-      align-items: center;
-      justify-content: center;
-      gap: 3px;
-      width: 100%;
-      padding: 0 4px;
-    }
-
     .corner-logo {
-      width: 0.45cm;
-      height: 0.45cm;
+      position: absolute;
+      top: 4px;
+      left: 6px;
+      width: 0.42cm;
+      height: 0.42cm;
       object-fit: contain;
-      flex-shrink: 0;
-      filter: drop-shadow(0 1px 1px rgba(0,0,0,0.3));
+      z-index: 10;
+      filter: drop-shadow(0 1px 2px rgba(0,0,0,0.3));
     }
 
-    .title-text {
+    .title {
       color: #FFFFFF;
-      font-size: 13pt;
+      font-size: 14pt;
       font-weight: 900;
-      letter-spacing: 1px;
-      text-shadow: 0 1px 3px rgba(0,0,0,0.3);
+      letter-spacing: 2px;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.3);
+      margin-top: -4px;
       text-align: center;
+      width: 100%;
     }
 
     .qr-wrapper {
@@ -187,16 +182,16 @@ Future<void> printItemLabelImpl(Item item, Room room) async {
 </head>
 <body>
   <div class="card">
+    <!-- Logo Sulsel pojok kiri (dalam area zigzag, tidak overlap title) -->
+    <img id="corner-logo-img" class="corner-logo" alt="Logo Sulsel" />
+
     <!-- Zigzag Top -->
     <svg class="zigzag-top" viewBox="0 0 360 28" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
       <polygon points="0,0 360,0 360,28 330,10 300,28 270,10 240,28 210,10 180,28 150,10 120,28 90,10 60,28 30,10 0,28" fill="rgba(255,255,255,0.15)"/>
       <polygon points="0,0 360,0 360,20 345,6 315,22 285,6 255,22 225,6 195,22 165,6 135,22 105,6 75,22 45,6 15,22 0,8" fill="rgba(255,255,255,0.10)"/>
     </svg>
 
-    <div class="title-row">
-      <img id="corner-logo-img" class="corner-logo" alt="Logo Sulsel" />
-      <span class="title-text">SCAN BANDA</span>
-    </div>
+    <div class="title">SCAN BANDA</div>
 
     <div class="qr-wrapper">
       $qrSvg
