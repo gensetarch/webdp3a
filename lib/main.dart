@@ -7,6 +7,8 @@ import 'scan_screen.dart';
 import 'package:image_picker/image_picker.dart';
 import 'printer_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
+import 'storage_helper.dart';
+
 
 // URL GitHub Pages resmi untuk deploy
 const String kPublicBaseUrl = 'https://gensetarch.github.io/webdp3a';
@@ -97,10 +99,44 @@ class _MainAppControllerState extends State<MainAppController> {
   }
 
   Future<void> _initData() async {
+    final loggedIn = getFromStorage('admin_logged_in') == 'true';
+    setState(() {
+      _isAdminLoggedIn = loggedIn;
+    });
+
     if (isSupabaseConfigured) {
       await _fetchDataFromSupabase();
     } else {
       _loadSampleData();
+    }
+
+    if (loggedIn) {
+      final savedRoomId = getFromStorage('admin_current_room_id');
+      if (savedRoomId != null) {
+        final roomList = _rooms.where((r) => r.id == savedRoomId).toList();
+        if (roomList.isNotEmpty) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => RoomDetailsScreen(
+                    room: roomList.first,
+                    allRooms: _rooms,
+                    onRoomsChanged: (updatedRooms) {
+                      setState(() {
+                        _rooms = updatedRooms;
+                      });
+                    },
+                  ),
+                ),
+              ).then((_) {
+                removeFromStorage('admin_current_room_id');
+              });
+            }
+          });
+        }
+      }
     }
   }
 
@@ -439,6 +475,7 @@ class _MainAppControllerState extends State<MainAppController> {
     if (!_isAdminLoggedIn) {
       return LoginScreen(
         onLoginSuccess: () {
+          saveToStorage('admin_logged_in', 'true');
           setState(() {
             _isAdminLoggedIn = true;
           });
@@ -461,6 +498,8 @@ class _MainAppControllerState extends State<MainAppController> {
     return DashboardScreen(
       rooms: _rooms,
       onLogout: () {
+        removeFromStorage('admin_logged_in');
+        removeFromStorage('admin_current_room_id');
         setState(() {
           _isAdminLoggedIn = false;
         });
@@ -2132,6 +2171,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                             child: ElevatedButton(
                                               onPressed: () {
+                                                saveToStorage('admin_current_room_id', room.id);
                                                 Navigator.push(
                                                   context,
                                                   MaterialPageRoute(
@@ -2142,7 +2182,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                       onRoomsChanged: onRoomsChanged,
                                                     ),
                                                   ),
-                                                );
+                                                ).then((_) {
+                                                  removeFromStorage('admin_current_room_id');
+                                                });
                                               },
                                               style: ElevatedButton.styleFrom(
                                                 backgroundColor: Colors.transparent,
@@ -2193,18 +2235,31 @@ class RoomDetailsScreen extends StatefulWidget {
 
 class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   late Room _room;
+  late List<Room> _allRooms;
 
   @override
   void initState() {
     super.initState();
     _room = widget.room;
+    _allRooms = List.from(widget.allRooms);
+  }
+
+  @override
+  void didUpdateWidget(covariant RoomDetailsScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (widget.room != oldWidget.room) {
+      _room = widget.room;
+    }
+    if (widget.allRooms != oldWidget.allRooms) {
+      _allRooms = List.from(widget.allRooms);
+    }
   }
 
   /// Generate kode barang otomatis berdasarkan prefix standar + nomor urut
   String _generateNextKodeBarang() {
     const prefix = '1.3.2.10.02.01.';
     // Kumpulkan semua kode barang yang ada di seluruh ruangan
-    final allKodes = widget.allRooms
+    final allKodes = _allRooms
         .expand((r) => r.items)
         .map((i) => i.kodeBarang)
         .toList();
@@ -2259,7 +2314,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
       final ni = nip.trim();
       final t = telp.trim();
       if (j.isEmpty || m.isEmpty) return null;
-      for (var r in widget.allRooms) {
+      for (var r in _allRooms) {
         for (var i in r.items) {
           if (i.jenisBarang.trim().toLowerCase() == j &&
               i.merekModel.trim().toLowerCase() == m &&
@@ -2279,7 +2334,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
       final j = jenis.trim().toLowerCase();
       final m = merek.trim().toLowerCase();
       if (j.isEmpty || m.isEmpty) return null;
-      for (var r in widget.allRooms) {
+      for (var r in _allRooms) {
         for (var i in r.items) {
           if (i.jenisBarang.trim().toLowerCase() == j &&
               i.merekModel.trim().toLowerCase() == m &&
@@ -2339,7 +2394,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
       }
       Item? foundItem;
       Room? foundRoom;
-      for (var r in widget.allRooms) {
+      for (var r in _allRooms) {
         for (var i in r.items) {
           if (i.kodeBarang.trim() == val.trim() && i.id != itemToEdit?.id) {
             foundItem = i;
@@ -2651,7 +2706,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
 
                                       // 2. Cek apakah kode ini sudah digunakan oleh barang dengan jenis/merek lain
                                       Item? sameCodeItem;
-                                      for (var r in widget.allRooms) {
+                                      for (var r in _allRooms) {
                                         for (var i in r.items) {
                                           if (i.kodeBarang.trim() == trimmedVal && i.id != itemToEdit?.id) {
                                             sameCodeItem = i;
@@ -2862,7 +2917,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                      final val = kodeController.text.trim();
                                      Item? foundItem;
                                      Room? foundRoom;
-                                     for (var r in widget.allRooms) {
+                                     for (var r in _allRooms) {
                                        for (var i in r.items) {
                                          if (i.kodeBarang.trim() == val) {
                                            foundItem = i;
@@ -2950,7 +3005,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                     if (saveSuccess) {
                                       setState(() {
                                         // Buat copy global dari list ruangan
-                                        final List<Room> updatedRooms = widget.allRooms.map((r) {
+                                        final List<Room> updatedRooms = _allRooms.map((r) {
                                           // 1. Jika ini adalah ruangan asal barang yang dipindah
                                           if (isMoving && r.id == matchedRoom!.id) {
                                             return r.copyWith(
@@ -2975,6 +3030,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                         }).toList();
 
                                         // Perbarui state lokal _room agar UI detail ruangan ini langsung update
+                                        _allRooms = updatedRooms;
                                         _room = updatedRooms.firstWhere((r) => r.id == _room.id);
                                         
                                         // Beritahu parent dashboard agar state global sinkron
@@ -3128,13 +3184,14 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
       _room = _room.copyWith(items: updated);
       
       // Sinkronkan ke seluruh ruangan
-      final List<Room> updatedRooms = widget.allRooms.map((r) {
+      final List<Room> updatedRooms = _allRooms.map((r) {
         if (r.id == _room.id) {
           return _room;
         }
         return r;
       }).toList();
       
+      _allRooms = updatedRooms;
       widget.onRoomsChanged(updatedRooms);
     });
   }
@@ -3530,21 +3587,27 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.spaceBetween,
                             children: [
-                              Row(
-                                children: [
-                                  const Icon(Icons.check_circle_outline,
-                                      color: Colors.white, size: 18),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    item.jenisBarang,
-                                    style: const TextStyle(
-                                      color: Colors.white,
-                                      fontWeight: FontWeight.bold,
-                                      fontSize: 15,
+                              Expanded(
+                                child: Row(
+                                  children: [
+                                    const Icon(Icons.check_circle_outline,
+                                        color: Colors.white, size: 18),
+                                    const SizedBox(width: 8),
+                                    Expanded(
+                                      child: Text(
+                                        item.jenisBarang,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: const TextStyle(
+                                          color: Colors.white,
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 15,
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ],
+                                  ],
+                                ),
                               ),
+                              const SizedBox(width: 12),
                               Row(
                                 children: [
                                   IconButton(
