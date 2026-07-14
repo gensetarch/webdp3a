@@ -2301,6 +2301,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     // barcode is auto-generated from kodeBarang — no separate controller needed
     final formKey = GlobalKey<FormState>();
     bool isUploadingFoto = false;
+    bool isSaving = false;
 
     // Variabel state lokal dialog untuk pencarian autofill
     Item? matchedItem;
@@ -2912,7 +2913,10 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                               ),
                               const SizedBox(width: 12),
                                ElevatedButton.icon(
-                                onPressed: () async {
+                                onPressed: isSaving ? null : () async {
+                                  if (isSaving) return;
+                                  dialogSetState(() => isSaving = true);
+                                  try {
                                    if (!isEditing && kodeController.text.trim().isNotEmpty) {
                                      final val = kodeController.text.trim();
                                      Item? foundItem;
@@ -3054,13 +3058,25 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                       }
                                     }
                                   }
+                                  } finally {
+                                     dialogSetState(() => isSaving = false);
+                                  }
                                 },
-                                icon: Icon(isEditing
-                                    ? Icons.save_outlined
-                                    : Icons.check_circle_outline),
-                                label: Text(isEditing
-                                    ? 'Simpan Perubahan'
-                                    : 'Tambah Barang'),
+                                icon: isSaving
+                                     ? const SizedBox(
+                                         width: 16,
+                                         height: 16,
+                                         child: CircularProgressIndicator(
+                                           strokeWidth: 2,
+                                           color: Colors.white,
+                                         ),
+                                       )
+                                     : Icon(isEditing
+                                         ? Icons.save_outlined
+                                         : Icons.check_circle_outline),
+                                 label: Text(isSaving
+                                     ? 'Menyimpan...'
+                                     : (isEditing ? 'Simpan Perubahan' : 'Tambah Barang')),
                                 style: ElevatedButton.styleFrom(
                                   backgroundColor: const Color(0xFF1A2F5A),
                                   foregroundColor: Colors.white,
