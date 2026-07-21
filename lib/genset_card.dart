@@ -368,7 +368,7 @@ class GensetCard extends StatelessWidget {
     if (path.isEmpty) {
       return _buildPlaceholder(width, height);
     }
-    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:')) {
+    if (path.startsWith('http://') || path.startsWith('https://') || path.startsWith('blob:') || path.startsWith('data:')) {
       return Image.network(
         path,
         width: width,

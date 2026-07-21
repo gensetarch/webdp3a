@@ -18,10 +18,17 @@ const String kSupabaseUrl = 'https://rxjixxgisdshfnkfyzaj.supabase.co';
 const String kSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4aml4eGdpc2RzaGZua2Z5emFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODE0MDMsImV4cCI6MjA5ODk1NzQwM30.po46YqhN0kYgIvB9KRsbJdynMLBGcmoY8tRxNpz7k1o';
 
 bool get isSupabaseConfigured {
-  return kSupabaseUrl != 'YOUR_SUPABASE_URL' &&
-      kSupabaseAnonKey != 'YOUR_SUPABASE_ANON_KEY' &&
-      kSupabaseUrl.isNotEmpty &&
-      kSupabaseAnonKey.isNotEmpty;
+  if (kSupabaseUrl == 'YOUR_SUPABASE_URL' ||
+      kSupabaseAnonKey == 'YOUR_SUPABASE_ANON_KEY' ||
+      kSupabaseUrl.isEmpty ||
+      kSupabaseAnonKey.isEmpty) {
+    return false;
+  }
+  try {
+    return Supabase.instance.client != null;
+  } catch (_) {
+    return false;
+  }
 }
 
 String generateRoomUrl(String roomId) {
@@ -2315,6 +2322,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   late List<Room> _allRooms;
 
   final TextEditingController _itemSearchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
   String _itemSearchQuery = '';
 
   @override
@@ -2330,6 +2338,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   @override
   void dispose() {
     _itemSearchController.dispose();
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -4010,28 +4019,38 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                       ),
                     ),
                   )
-                // Desktop: sidebar scroll ikut, konten kanan juga scroll sendiri
-                : Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      SingleChildScrollView(
-                        child: Padding(
-                          padding: const EdgeInsets.all(24.0),
-                          child: sidebar,
-                        ),
-                      ),
-                      Expanded(
-                        child: SingleChildScrollView(
-                          child: Center(
-                            child: Container(
-                              constraints: const BoxConstraints(maxWidth: 860),
-                              padding: const EdgeInsets.fromLTRB(0, 24, 24, 24),
+                // Desktop: Single scroll view with smooth floating sticky sidebar
+                : SingleChildScrollView(
+                    controller: _scrollController,
+                    child: Center(
+                      child: Container(
+                        constraints: const BoxConstraints(maxWidth: 1200),
+                        padding: const EdgeInsets.all(24.0),
+                        child: Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            AnimatedBuilder(
+                              animation: _scrollController,
+                              builder: (context, child) {
+                                double offset = 0.0;
+                                if (_scrollController.hasClients) {
+                                  offset = _scrollController.offset.clamp(0.0, double.infinity);
+                                }
+                                return Transform.translate(
+                                  offset: Offset(0, offset),
+                                  child: child,
+                                );
+                              },
+                              child: sidebar,
+                            ),
+                            const SizedBox(width: 24),
+                            Expanded(
                               child: rightPaneContent,
                             ),
-                          ),
+                          ],
                         ),
                       ),
-                    ],
+                    ),
                   ),
           ),
         ],

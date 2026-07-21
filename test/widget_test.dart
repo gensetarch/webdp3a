@@ -15,8 +15,8 @@ void main() {
     // Build our app and trigger a frame.
     await tester.pumpWidget(const MyApp());
 
-    // Verify that the login screen is displayed.
-    expect(find.text('Login Admin'), findsOneWidget);
-    expect(find.text('Masuk ke Panel'), findsOneWidget);
+    // Verify that the login screen is displayed properly.
+    expect(find.text('Akses Administrator'), findsOneWidget);
+    expect(find.text('Sistem Manajemen Aset'), findsOneWidget);
   });
 }
