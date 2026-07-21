@@ -1235,6 +1235,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
   VoidCallback get onScanPressed => widget.onScanPressed;
   VoidCallback get onHostOverrideChanged => widget.onHostOverrideChanged;
 
+  final TextEditingController _roomSearchController = TextEditingController();
+  String _roomSearchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _roomSearchController.addListener(() {
+      setState(() => _roomSearchQuery = _roomSearchController.text.trim().toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _roomSearchController.dispose();
+    super.dispose();
+  }
+
   void _showLogoutConfirmation() async {
     final confirm = await showDialog<bool>(
       context: context,
@@ -1926,9 +1943,42 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             ],
                           ),
                   ),
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
-                  // Grid of rooms (unchanged)
+                  // Search bar untuk ruangan
+                  Container(
+                    decoration: BoxDecoration(
+                      color: Colors.white.withOpacity(0.92),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: Colors.white.withOpacity(0.6)),
+                      boxShadow: [
+                        BoxShadow(
+                          color: Colors.black.withOpacity(0.04),
+                          blurRadius: 12,
+                          offset: const Offset(0, 4),
+                        ),
+                      ],
+                    ),
+                    child: TextField(
+                      controller: _roomSearchController,
+                      decoration: InputDecoration(
+                        hintText: 'Cari ruangan...',
+                        hintStyle: const TextStyle(color: Color(0xFF9EB0C8), fontSize: 14),
+                        prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF1A2F5A), size: 20),
+                        suffixIcon: _roomSearchQuery.isNotEmpty
+                            ? IconButton(
+                                icon: const Icon(Icons.close_rounded, color: Color(0xFF1A2F5A), size: 18),
+                                onPressed: () => _roomSearchController.clear(),
+                              )
+                            : null,
+                        border: InputBorder.none,
+                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Grid of rooms
                   Expanded(
                     child: rooms.isEmpty
                         ? Center(
@@ -1974,7 +2024,32 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               ),
                             ),
                           )
-                        : GridView.builder(
+                        : Builder(builder: (context) {
+                            final filteredRooms = _roomSearchQuery.isEmpty
+                                ? rooms
+                                : rooms
+                                    .where((r) => r.name.toLowerCase().contains(_roomSearchQuery))
+                                    .toList();
+                            if (filteredRooms.isEmpty) {
+                              return Center(
+                                child: Padding(
+                                  padding: const EdgeInsets.all(32),
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.search_off_rounded, size: 60, color: const Color(0xFF1A2F5A).withOpacity(0.2)),
+                                      const SizedBox(height: 12),
+                                      Text(
+                                        'Ruangan "${_roomSearchController.text}" tidak ditemukan',
+                                        style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14),
+                                        textAlign: TextAlign.center,
+                                      ),
+                                    ],
+                                  ),
+                                ),
+                              );
+                            }
+                            return GridView.builder(
                             gridDelegate:
                                 const SliverGridDelegateWithMaxCrossAxisExtent(
                               maxCrossAxisExtent: 380,
@@ -1982,9 +2057,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               crossAxisSpacing: 20,
                               mainAxisSpacing: 20,
                             ),
-                            itemCount: rooms.length,
+                            itemCount: filteredRooms.length,
                             itemBuilder: (context, index) {
-                              final room = rooms[index];
+                              final room = filteredRooms[index];
                               return Card(
                                 elevation: 0,
                                 color: Colors.white,
@@ -2203,7 +2278,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               );
                             },
-                          ),
+                          );
+                        }), // end Builder
                   ),
                 ],
               ),
@@ -2238,11 +2314,23 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   late Room _room;
   late List<Room> _allRooms;
 
+  final TextEditingController _itemSearchController = TextEditingController();
+  String _itemSearchQuery = '';
+
   @override
   void initState() {
     super.initState();
     _room = widget.room;
     _allRooms = List.from(widget.allRooms);
+    _itemSearchController.addListener(() {
+      setState(() => _itemSearchQuery = _itemSearchController.text.trim().toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _itemSearchController.dispose();
+    super.dispose();
   }
 
   @override
@@ -3041,11 +3129,11 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                            if (r.id == _room.id) {
                                              List<Item> newItemsList;
                                              if (isEditing) {
-                                               newItemsList = r.items
-                                                   .map((i) => i.id == itemToEdit.id ? newItem : i)
-                                                   .toList();
+                                               // Hapus item lama, sisipkan hasil edit di posisi paling atas
+                                               newItemsList = [newItem, ...r.items.where((i) => i.id != itemToEdit?.id)];
                                              } else {
-                                               newItemsList = List<Item>.from(r.items)..add(newItem);
+                                               // Tambah barang baru di posisi paling atas
+                                               newItemsList = [newItem, ...r.items];
                                              }
                                              return r.copyWith(items: newItemsList);
                                            }
@@ -3375,6 +3463,16 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     );
 
     // Right/Bottom Pane Content
+    final filteredItems = _itemSearchQuery.isEmpty
+        ? _room.items
+        : _room.items
+            .where((item) =>
+                item.jenisBarang.toLowerCase().contains(_itemSearchQuery) ||
+                item.merekModel.toLowerCase().contains(_itemSearchQuery) ||
+                item.kodeBarang.toLowerCase().contains(_itemSearchQuery) ||
+                item.namaPengguna.toLowerCase().contains(_itemSearchQuery))
+            .toList();
+
     final rightPaneContent = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -3418,7 +3516,9 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Menampilkan ${_room.items.length} barang terdaftar',
+                      _itemSearchQuery.isEmpty
+                          ? 'Menampilkan ${_room.items.length} barang terdaftar'
+                          : 'Ditemukan ${filteredItems.length} dari ${_room.items.length} barang',
                       style: const TextStyle(
                           color: Color(0xFF4A5568),
                           fontSize: 13,
@@ -3430,7 +3530,40 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
             ],
           ),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 12),
+
+        // Search bar untuk barang
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.92),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: Colors.white.withOpacity(0.6)),
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withOpacity(0.04),
+                blurRadius: 12,
+                offset: const Offset(0, 4),
+              ),
+            ],
+          ),
+          child: TextField(
+            controller: _itemSearchController,
+            decoration: InputDecoration(
+              hintText: 'Cari barang (nama, kode, merek, pengguna)...',
+              hintStyle: const TextStyle(color: Color(0xFF9EB0C8), fontSize: 13),
+              prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF1A2F5A), size: 20),
+              suffixIcon: _itemSearchQuery.isNotEmpty
+                  ? IconButton(
+                      icon: const Icon(Icons.close_rounded, color: Color(0xFF1A2F5A), size: 18),
+                      onPressed: () => _itemSearchController.clear(),
+                    )
+                  : null,
+              border: InputBorder.none,
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            ),
+          ),
+        ),
+        const SizedBox(height: 16),
 
         // Inventory Items List
         _room.items.isEmpty
@@ -3484,12 +3617,30 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                   ),
                 ),
               )
-            : ListView.builder(
+            : filteredItems.isEmpty && _itemSearchQuery.isNotEmpty
+                ? Center(
+                    child: Padding(
+                      padding: const EdgeInsets.all(32),
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(Icons.search_off_rounded, size: 60, color: const Color(0xFF1A2F5A).withOpacity(0.2)),
+                          const SizedBox(height: 12),
+                          const Text(
+                            'Barang tidak ditemukan',
+                            style: TextStyle(color: Color(0xFF4A5568), fontSize: 14),
+                            textAlign: TextAlign.center,
+                          ),
+                        ],
+                      ),
+                    ),
+                  )
+                : ListView.builder(
                 shrinkWrap: true,
                 physics: const NeverScrollableScrollPhysics(),
-                itemCount: _room.items.length,
+                itemCount: filteredItems.length,
                 itemBuilder: (context, index) {
-                  final item = _room.items[index];
+                  final item = filteredItems[index];
 
                   // GensetCard fills available width automatically via LayoutBuilder
                   final cardWidget = GensetCard(room: _room, item: item);
@@ -3842,33 +3993,46 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
           ),
           // Main content with padding
           Positioned.fill(
-            child: SingleChildScrollView(
-              child: Center(
-                child: Container(
-                  constraints: const BoxConstraints(maxWidth: 1200),
-                  padding: const EdgeInsets.all(24.0),
-                  child: isMobile
-                      ? Column(
+            child: isMobile
+                ? SingleChildScrollView(
+                    child: Center(
+                      child: Container(
+                        constraints: const BoxConstraints(maxWidth: 1200),
+                        padding: const EdgeInsets.all(24.0),
+                        child: Column(
                           crossAxisAlignment: CrossAxisAlignment.stretch,
                           children: [
                             sidebar,
                             const SizedBox(height: 24),
                             rightPaneContent,
                           ],
-                        )
-                      : Row(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            sidebar,
-                            const SizedBox(width: 24),
-                            Expanded(
+                        ),
+                      ),
+                    ),
+                  )
+                // Desktop: sidebar scroll ikut, konten kanan juga scroll sendiri
+                : Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      SingleChildScrollView(
+                        child: Padding(
+                          padding: const EdgeInsets.all(24.0),
+                          child: sidebar,
+                        ),
+                      ),
+                      Expanded(
+                        child: SingleChildScrollView(
+                          child: Center(
+                            child: Container(
+                              constraints: const BoxConstraints(maxWidth: 860),
+                              padding: const EdgeInsets.fromLTRB(0, 24, 24, 24),
                               child: rightPaneContent,
                             ),
-                          ],
+                          ),
                         ),
-                ),
-              ),
-            ),
+                      ),
+                    ],
+                  ),
           ),
         ],
       ),
