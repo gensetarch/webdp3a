@@ -18,17 +18,10 @@ const String kSupabaseUrl = 'https://rxjixxgisdshfnkfyzaj.supabase.co';
 const String kSupabaseAnonKey = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InJ4aml4eGdpc2RzaGZua2Z5emFqIiwicm9sZSI6ImFub24iLCJpYXQiOjE3ODMzODE0MDMsImV4cCI6MjA5ODk1NzQwM30.po46YqhN0kYgIvB9KRsbJdynMLBGcmoY8tRxNpz7k1o';
 
 bool get isSupabaseConfigured {
-  if (kSupabaseUrl == 'YOUR_SUPABASE_URL' ||
-      kSupabaseAnonKey == 'YOUR_SUPABASE_ANON_KEY' ||
-      kSupabaseUrl.isEmpty ||
-      kSupabaseAnonKey.isEmpty) {
-    return false;
-  }
-  try {
-    return Supabase.instance.client != null;
-  } catch (_) {
-    return false;
-  }
+  return kSupabaseUrl != 'YOUR_SUPABASE_URL' &&
+      kSupabaseAnonKey != 'YOUR_SUPABASE_ANON_KEY' &&
+      kSupabaseUrl.isNotEmpty &&
+      kSupabaseAnonKey.isNotEmpty;
 }
 
 String generateRoomUrl(String roomId) {
