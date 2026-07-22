@@ -422,67 +422,31 @@ class _MainAppControllerState extends State<MainAppController> {
       );
     }
 
-    // 1. Check Public Item View Route — HANYA cocokkan berdasarkan item.id
+    // 1. Check Public Item View Route — TAMPILKAN 1 BARANG SAJA YANG DI-SCAN
     if (_publicItemId != null) {
-      final List<MapEntry<Item, Room>> matchedItems = [];
+      Item? matchedItem;
+      Room? matchedRoom;
+
       for (var r in _rooms) {
         for (var i in r.items) {
-          // Hanya match by ID unik — tidak pernah by kode_barang
-          if (i.id == _publicItemId) {
-            matchedItems.add(MapEntry(i, r));
+          if (i.id.trim() == _publicItemId!.trim() ||
+              i.barcode.trim() == _publicItemId!.trim()) {
+            matchedItem = i;
+            matchedRoom = r;
+            break;
           }
         }
+        if (matchedItem != null) break;
       }
 
-      if (matchedItems.isNotEmpty) {
-        if (_selectedItemId != null) {
-          final selectedEntry = matchedItems.firstWhere(
-            (entry) => entry.key.id == _selectedItemId,
-            orElse: () => matchedItems.first,
-          );
-          return PublicItemScreen(
-            item: selectedEntry.key,
-            room: selectedEntry.value,
-            onBack: () {
-              if (matchedItems.length > 1) {
-                setState(() {
-                  _selectedItemId = null;
-                });
-              } else {
-                setPublicItemId(null);
-                setState(() {
-                  _selectedItemId = null;
-                });
-              }
-            },
-          );
-        }
-
-        if (matchedItems.length == 1) {
-          return PublicItemScreen(
-            item: matchedItems.first.key,
-            room: matchedItems.first.value,
-            onBack: () {
-              setPublicItemId(null);
-              setState(() {
-                _selectedItemId = null;
-              });
-            },
-          );
-        }
-
-        return PublicItemListScreen(
-          scannedCode: _publicItemId!,
-          matchedItems: matchedItems,
+      if (matchedItem != null && matchedRoom != null) {
+        return PublicItemScreen(
+          item: matchedItem,
+          room: matchedRoom,
           onBack: () {
             setPublicItemId(null);
             setState(() {
               _selectedItemId = null;
-            });
-          },
-          onViewItem: (item) {
-            setState(() {
-              _selectedItemId = item.id;
             });
           },
         );
@@ -4364,13 +4328,6 @@ class PublicItemScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final matchingItems = room.items.where((i) =>
-      i.jenisBarang.trim().toLowerCase() == item.jenisBarang.trim().toLowerCase() &&
-      i.merekModel.trim().toLowerCase() == item.merekModel.trim().toLowerCase()
-    ).toList();
-
-    final itemsToDisplay = matchingItems.isEmpty ? [item] : matchingItems;
-
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
@@ -4402,82 +4359,80 @@ class PublicItemScreen extends StatelessWidget {
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                ...itemsToDisplay.map((displayItem) {
-                  return Padding(
-                    padding: const EdgeInsets.only(bottom: 40.0),
-                    child: Column(
-                      children: [
-                        // Zoomable Template Card
-                        FittedBox(
-                          fit: BoxFit.contain,
-                          child: Container(
-                            width: 600, // Force internal rendering at full width
-                            decoration: BoxDecoration(
-                              borderRadius: BorderRadius.circular(16),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: Colors.black.withOpacity(0.08),
-                                  blurRadius: 24,
-                                  offset: const Offset(0, 8),
-                                ),
-                              ],
-                            ),
-                            child: GensetCard(room: room, item: displayItem),
-                          ),
-                        ),
-                        const SizedBox(height: 24),
-
-                        // Bottom info panel
-                        Container(
-                          width: 720,
-                          padding: const EdgeInsets.all(20),
+                Padding(
+                  padding: const EdgeInsets.only(bottom: 24.0),
+                  child: Column(
+                    children: [
+                      // Zoomable Template Card
+                      FittedBox(
+                        fit: BoxFit.contain,
+                        child: Container(
+                          width: 600, // Force internal rendering at full width
                           decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(color: Colors.grey[200]!),
-                          ),
-                          child: Row(
-                            children: [
-                              Expanded(
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: [
-                                    const Text(
-                                      'Informasi Label QR & Barcode Fisik',
-                                      style: TextStyle(
-                                          fontWeight: FontWeight.bold, fontSize: 16),
-                                    ),
-                                    const SizedBox(height: 6),
-                                    Text(
-                                      'Kode Barang: ${displayItem.kodeBarang}',
-                                      style: const TextStyle(
-                                        fontSize: 13,
-                                        color: Color(0xFF4A4A4A),
-                                        fontFamily: 'monospace',
-                                        fontWeight: FontWeight.bold,
-                                      ),
-                                    ),
-                                    const SizedBox(height: 4),
-                                    const Text(
-                                      'Informasi di atas merupakan data resmi DP3A DALDUK KB Provinsi Sulawesi Selatan.',
-                                      style: TextStyle(
-                                          fontSize: 11,
-                                          color: Color(0xFF555555),
-                                          height: 1.4,
-                                          fontWeight: FontWeight.w500),
-                                    ),
-                                  ],
-                                ),
+                            borderRadius: BorderRadius.circular(16),
+                            boxShadow: [
+                              BoxShadow(
+                                color: Colors.black.withOpacity(0.08),
+                                blurRadius: 24,
+                                offset: const Offset(0, 8),
                               ),
-                              const SizedBox(width: 16),
-                              QRCodeWidget(data: generateItemUrl(displayItem.id), size: 70),
                             ],
                           ),
+                          child: GensetCard(room: room, item: item),
                         ),
-                      ],
-                    ),
-                  );
-                }).toList(),
+                      ),
+                      const SizedBox(height: 24),
+
+                      // Bottom info panel
+                      Container(
+                        width: 720,
+                        padding: const EdgeInsets.all(20),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: Colors.grey[200]!),
+                        ),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  const Text(
+                                    'Informasi Label QR & Barcode Fisik',
+                                    style: TextStyle(
+                                        fontWeight: FontWeight.bold, fontSize: 16),
+                                  ),
+                                  const SizedBox(height: 6),
+                                  Text(
+                                    'Kode Barang: ${item.kodeBarang}',
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      color: Color(0xFF4A4A4A),
+                                      fontFamily: 'monospace',
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 4),
+                                  const Text(
+                                    'Informasi di atas merupakan data resmi DP3A DALDUK KB Provinsi Sulawesi Selatan.',
+                                    style: TextStyle(
+                                        fontSize: 11,
+                                        color: Color(0xFF555555),
+                                        height: 1.4,
+                                        fontWeight: FontWeight.w500),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(width: 16),
+                            QRCodeWidget(data: generateItemUrl(item.id), size: 70),
+                          ],
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
           ),
