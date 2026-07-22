@@ -135,7 +135,22 @@ class _MainAppControllerState extends State<MainAppController> {
   }
 
   Future<void> _initData() async {
-    final loggedIn = getFromStorage('admin_logged_in') == 'true';
+    final bool isReload = isPageReload();
+
+    // Jika BUKAN reload (misal user klik link webnya / baru buka URL),
+    // hapus status session login admin agar selalu kembali ke Halaman Login.
+    if (!isReload) {
+      removeFromStorage('admin_logged_in');
+      removeFromStorage('admin_current_room_id');
+      removeFromSession('admin_logged_in');
+      removeFromSession('admin_current_room_id');
+    }
+
+    final loggedIn = isReload && (
+      getFromSession('admin_logged_in') == 'true' ||
+      getFromStorage('admin_logged_in') == 'true'
+    );
+
     setState(() {
       _isAdminLoggedIn = loggedIn;
     });
@@ -160,8 +175,8 @@ class _MainAppControllerState extends State<MainAppController> {
       });
     }
 
-    if (loggedIn) {
-      final savedRoomId = getFromStorage('admin_current_room_id');
+    if (loggedIn && isReload) {
+      final savedRoomId = getFromSession('admin_current_room_id') ?? getFromStorage('admin_current_room_id');
       if (savedRoomId != null) {
         final roomList = _rooms.where((r) => r.id == savedRoomId).toList();
         if (roomList.isNotEmpty) {
@@ -182,6 +197,7 @@ class _MainAppControllerState extends State<MainAppController> {
                 ),
               ).then((_) {
                 removeFromStorage('admin_current_room_id');
+                removeFromSession('admin_current_room_id');
               });
             }
           });
@@ -570,6 +586,7 @@ class _MainAppControllerState extends State<MainAppController> {
       return LoginScreen(
         onLoginSuccess: () {
           saveToStorage('admin_logged_in', 'true');
+          saveToSession('admin_logged_in', 'true');
           setState(() {
             _isAdminLoggedIn = true;
           });
@@ -594,6 +611,8 @@ class _MainAppControllerState extends State<MainAppController> {
       onLogout: () {
         removeFromStorage('admin_logged_in');
         removeFromStorage('admin_current_room_id');
+        removeFromSession('admin_logged_in');
+        removeFromSession('admin_current_room_id');
         setState(() {
           _isAdminLoggedIn = false;
         });
@@ -2341,6 +2360,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             child: ElevatedButton(
                                               onPressed: () {
                                                 saveToStorage('admin_current_room_id', room.id);
+                                                saveToSession('admin_current_room_id', room.id);
                                                 Navigator.push(
                                                   context,
                                                   MaterialPageRoute(
@@ -2353,6 +2373,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   ),
                                                 ).then((_) {
                                                   removeFromStorage('admin_current_room_id');
+                                                  removeFromSession('admin_current_room_id');
                                                 });
                                               },
                                               style: ElevatedButton.styleFrom(
