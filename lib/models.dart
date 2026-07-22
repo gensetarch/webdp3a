@@ -3,9 +3,8 @@ class Item {
   String jenisBarang;
   String merekModel;
   String kodeBarang;
-  String namaPengguna;
-  String nipPengguna;
-  String teleponPengguna;
+  String noRegister;
+  String kondisiAset; // 'Baik', 'Kurang Baik', 'Rusak'
   String fotoUrl;
   String barcode;
   String tahunPerolehan;
@@ -15,9 +14,8 @@ class Item {
     required this.jenisBarang,
     required this.merekModel,
     required this.kodeBarang,
-    required this.namaPengguna,
-    required this.nipPengguna,
-    required this.teleponPengguna,
+    required this.noRegister,
+    required this.kondisiAset,
     required this.fotoUrl,
     required this.barcode,
     this.tahunPerolehan = '',
@@ -30,9 +28,8 @@ class Item {
       'jenisBarang': jenisBarang,
       'merekModel': merekModel,
       'kodeBarang': kodeBarang,
-      'namaPengguna': namaPengguna,
-      'nipPengguna': nipPengguna,
-      'teleponPengguna': teleponPengguna,
+      'noRegister': noRegister,
+      'kondisiAset': kondisiAset,
       'fotoUrl': fotoUrl,
       'barcode': barcode,
       'tahunPerolehan': tahunPerolehan,
@@ -43,15 +40,14 @@ class Item {
   factory Item.fromMap(Map<String, dynamic> map) {
     return Item(
       id: map['id'] ?? '',
-      jenisBarang: map['jenisBarang'] ?? '',
-      merekModel: map['merekModel'] ?? '',
-      kodeBarang: map['kodeBarang'] ?? '',
-      namaPengguna: map['namaPengguna'] ?? '',
-      nipPengguna: map['nipPengguna'] ?? '',
-      teleponPengguna: map['teleponPengguna'] ?? '',
-      fotoUrl: map['fotoUrl'] ?? '',
+      jenisBarang: map['jenisBarang'] ?? map['jenis_barang'] ?? '',
+      merekModel: map['merekModel'] ?? map['merek_model'] ?? '',
+      kodeBarang: map['kodeBarang'] ?? map['kode_barang'] ?? '',
+      noRegister: map['noRegister'] ?? map['no_register'] ?? map['namaPengguna'] ?? '',
+      kondisiAset: map['kondisiAset'] ?? map['kondisi_aset'] ?? 'Baik',
+      fotoUrl: map['fotoUrl'] ?? map['foto_url'] ?? '',
       barcode: map['barcode'] ?? '',
-      tahunPerolehan: map['tahunPerolehan'] ?? '',
+      tahunPerolehan: map['tahunPerolehan'] ?? map['tahun_perolehan'] ?? '',
     );
   }
 
@@ -60,9 +56,8 @@ class Item {
     String? jenisBarang,
     String? merekModel,
     String? kodeBarang,
-    String? namaPengguna,
-    String? nipPengguna,
-    String? teleponPengguna,
+    String? noRegister,
+    String? kondisiAset,
     String? fotoUrl,
     String? barcode,
     String? tahunPerolehan,
@@ -72,9 +67,8 @@ class Item {
       jenisBarang: jenisBarang ?? this.jenisBarang,
       merekModel: merekModel ?? this.merekModel,
       kodeBarang: kodeBarang ?? this.kodeBarang,
-      namaPengguna: namaPengguna ?? this.namaPengguna,
-      nipPengguna: nipPengguna ?? this.nipPengguna,
-      teleponPengguna: teleponPengguna ?? this.teleponPengguna,
+      noRegister: noRegister ?? this.noRegister,
+      kondisiAset: kondisiAset ?? this.kondisiAset,
       fotoUrl: fotoUrl ?? this.fotoUrl,
       barcode: barcode ?? this.barcode,
       tahunPerolehan: tahunPerolehan ?? this.tahunPerolehan,

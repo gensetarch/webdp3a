@@ -201,9 +201,8 @@ class _MainAppControllerState extends State<MainAppController> {
             jenisBarang: itemData['jenis_barang'] ?? '',
             merekModel: itemData['merek_model'] ?? '',
             kodeBarang: itemData['kode_barang'] ?? '',
-            namaPengguna: itemData['nama_pengguna'] ?? '',
-            nipPengguna: itemData['nip_pengguna'] ?? '',
-            teleponPengguna: itemData['telepon_pengguna'] ?? '',
+            noRegister: itemData['no_register'] ?? itemData['noRegister'] ?? '',
+            kondisiAset: itemData['kondisi_aset'] ?? itemData['kondisiAset'] ?? 'Baik',
             fotoUrl: itemData['foto_url'] ?? '',
             barcode: itemData['barcode'] ?? '',
             tahunPerolehan: itemData['tahun_perolehan'] ?? '',
@@ -327,9 +326,8 @@ class _MainAppControllerState extends State<MainAppController> {
             jenisBarang: 'Serial Printer',
             merekModel: 'Epson L5290',
             kodeBarang: '1.3.2.10.02.01.009',
-            namaPengguna: 'Zul Fadli Al Gifari, A. Md. M',
-            nipPengguna: '20010523 202203 I 001',
-            teleponPengguna: '0852-5154-2879',
+            noRegister: '0001',
+            kondisiAset: 'Baik',
             fotoUrl:
                 'https://images.unsplash.com/photo-1612815154858-60aa4c59eaa6?q=80&w=400&auto=format&fit=crop',
             barcode: '1.3.2.10.02.01.009',
@@ -347,9 +345,8 @@ class _MainAppControllerState extends State<MainAppController> {
             jenisBarang: 'Laptop Kerja',
             merekModel: 'MacBook Air M2',
             kodeBarang: '1.3.2.10.02.01.015',
-            namaPengguna: 'Hj. Andi Kartini, S.E., M.Si.',
-            nipPengguna: '19750912 199903 I 002',
-            teleponPengguna: '0811-4567-8910',
+            noRegister: '0002',
+            kondisiAset: 'Kurang Baik',
             fotoUrl:
                 'https://images.unsplash.com/photo-1517336714731-489689fd1ca8?q=80&w=400&auto=format&fit=crop',
             barcode: '132100201015',
@@ -367,9 +364,8 @@ class _MainAppControllerState extends State<MainAppController> {
             jenisBarang: 'PC All-in-One',
             merekModel: 'HP Pavilion 24',
             kodeBarang: '1.3.2.10.02.03.003',
-            namaPengguna: 'Rahmat Hidayat, S. Kom.',
-            nipPengguna: '19920815 201803 I 003',
-            teleponPengguna: '0812-9876-5432',
+            noRegister: '0003',
+            kondisiAset: 'Baik',
             fotoUrl:
                 'https://images.unsplash.com/photo-1547082299-de196ea013d6?q=80&w=400&auto=format&fit=crop',
             barcode: '1.3.2.10.02.03.003',
@@ -2409,12 +2405,9 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     final kodeController = TextEditingController(
         text: isEditing ? (itemToEdit?.kodeBarang ?? '') : '');
 
-    final namaUserController =
-        TextEditingController(text: itemToEdit?.namaPengguna ?? '');
-    final nipUserController =
-        TextEditingController(text: itemToEdit?.nipPengguna ?? '');
-    final telpUserController =
-        TextEditingController(text: itemToEdit?.teleponPengguna ?? '');
+    final noRegisterController =
+        TextEditingController(text: itemToEdit?.noRegister ?? '');
+    String selectedKondisiAset = itemToEdit?.kondisiAset ?? 'Baik';
     final fotoController =
         TextEditingController(text: itemToEdit?.fotoUrl ?? '');
     final tahunPerolehanController =
@@ -2429,20 +2422,18 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     Room? matchedRoom;
 
     // Helper untuk mencari barang dengan semua data yang sama (kecuali foto)
-    Item? findItemByAllData(String jenis, String merek, String nama, String nip, String telp) {
+    Item? findItemByAllData(String jenis, String merek, String noReg, String kondisi) {
       final j = jenis.trim().toLowerCase();
       final m = merek.trim().toLowerCase();
-      final n = nama.trim().toLowerCase();
-      final ni = nip.trim();
-      final t = telp.trim();
+      final nr = noReg.trim().toLowerCase();
+      final k = kondisi.trim().toLowerCase();
       if (j.isEmpty || m.isEmpty) return null;
       for (var r in _allRooms) {
         for (var i in r.items) {
           if (i.jenisBarang.trim().toLowerCase() == j &&
               i.merekModel.trim().toLowerCase() == m &&
-              i.namaPengguna.trim().toLowerCase() == n &&
-              i.nipPengguna.trim() == ni &&
-              i.teleponPengguna.trim() == t &&
+              i.noRegister.trim().toLowerCase() == nr &&
+              i.kondisiAset.trim().toLowerCase() == k &&
               i.id != itemToEdit?.id) {
             return i;
           }
@@ -2472,12 +2463,11 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
       if (!autoGenerateKode) return;
       final jenis = jenisController.text.trim();
       final merek = merekController.text.trim();
-      final nama = namaUserController.text.trim();
-      final nip = nipUserController.text.trim();
-      final telp = telpUserController.text.trim();
+      final noReg = noRegisterController.text.trim();
+      final kondisi = selectedKondisiAset.trim();
 
       // Cari barang dengan semua data yang sama (kecuali foto)
-      final matched = findItemByAllData(jenis, merek, nama, nip, telp);
+      final matched = findItemByAllData(jenis, merek, noReg, kondisi);
       if (matched != null) {
         // Gunakan kode barang yang sama dengan barang serupa
         kodeController.text = matched.kodeBarang;
@@ -2486,10 +2476,9 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
         if (isEditing) {
           final sameJenis = jenis.toLowerCase() == itemToEdit.jenisBarang.trim().toLowerCase();
           final sameMerek = merek.toLowerCase() == itemToEdit.merekModel.trim().toLowerCase();
-          final samaNama = nama.toLowerCase() == itemToEdit.namaPengguna.trim().toLowerCase();
-          final samaNip = nip == itemToEdit.nipPengguna.trim();
-          final samaTelp = telp == itemToEdit.teleponPengguna.trim();
-          if (sameJenis && sameMerek && samaNama && samaNip && samaTelp) {
+          final samaNoReg = noReg.toLowerCase() == itemToEdit.noRegister.trim().toLowerCase();
+          final samaKondisi = kondisi.toLowerCase() == itemToEdit.kondisiAset.trim().toLowerCase();
+          if (sameJenis && sameMerek && samaNoReg && samaKondisi) {
             // Data tidak berubah — pakai kode lama
             kodeController.text = itemToEdit.kodeBarang.isNotEmpty
                 ? itemToEdit.kodeBarang
@@ -2532,9 +2521,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
       if (foundItem != null) {
         jenisController.text = foundItem.jenisBarang;
         merekController.text = foundItem.merekModel;
-        namaUserController.text = foundItem.namaPengguna;
-        nipUserController.text = foundItem.nipPengguna;
-        telpUserController.text = foundItem.teleponPengguna;
+        noRegisterController.text = foundItem.noRegister;
+        selectedKondisiAset = foundItem.kondisiAset.isNotEmpty ? foundItem.kondisiAset : 'Baik';
         fotoController.text = foundItem.fotoUrl;
         tahunPerolehanController.text = foundItem.tahunPerolehan;
       }
@@ -2584,9 +2572,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                       jenisController,
                       merekController,
                       kodeController,
-                      namaUserController,
-                      nipUserController,
-                      telpUserController,
+                      noRegisterController,
                       fotoController,
                       tahunPerolehanController,
                     ]),
@@ -2603,15 +2589,10 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                             ? merekController.text
                             : 'Merek / Model',
                         kodeBarang: kode,
-                        namaPengguna: namaUserController.text.isNotEmpty
-                            ? namaUserController.text
-                            : 'Nama Pengguna',
-                        nipPengguna: nipUserController.text.isNotEmpty
-                            ? nipUserController.text
-                            : 'NIP / ID',
-                        teleponPengguna: telpUserController.text.isNotEmpty
-                            ? telpUserController.text
-                            : '08xx-xxxx-xxxx',
+                        noRegister: noRegisterController.text.isNotEmpty
+                            ? noRegisterController.text
+                            : '0001',
+                        kondisiAset: selectedKondisiAset,
                         fotoUrl: fotoController.text,
                         barcode: kode,
                         tahunPerolehan: tahunPerolehanController.text,
@@ -2893,52 +2874,69 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                     ),
                                   ],
                                 ],
-                              ),
-                              const SizedBox(height: 20),
-                              _sectionLabel(
-                                  'Data Pengguna',
-                                  Icons.person_outline_rounded,
+                                        _sectionLabel(
+                                  'No. Register & Kondisi Aset',
+                                  Icons.assignment_outlined,
                                   const Color(0xFFCFA836)),
                               const SizedBox(height: 10),
                               TextFormField(
-                                controller: namaUserController,
+                                controller: noRegisterController,
                                 decoration: themedInput(
-                                    'Nama Pengguna', Icons.badge_outlined),
+                                    'No. Register Aset', Icons.app_registration_rounded),
                                 inputFormatters: [
                                   FilteringTextInputFormatter.allow(
-                                    RegExp(r"[a-zA-ZÀ-öø-ÿ\s.,\-']"),
+                                    RegExp(r'[a-zA-Z0-9\s.\-\/]'),
                                   ),
                                 ],
-                                keyboardType: TextInputType.name,
-                                textCapitalization: TextCapitalization.words,
                                 onChanged: (_) => dialogSetState(() => updateKodeBarang()),
                               ),
                               const SizedBox(height: 10),
-                              TextFormField(
-                                controller: nipUserController,
-                                decoration: themedInput(
-                                    'NIP / ID Pengguna', Icons.numbers_outlined),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'[0-9\s\-]'),
+                              DropdownButtonFormField<String>(
+                                value: ['Baik', 'Kurang Baik', 'Rusak'].contains(selectedKondisiAset)
+                                    ? selectedKondisiAset
+                                    : 'Baik',
+                                decoration: themedInput('Kondisi Aset', Icons.verified_outlined),
+                                dropdownColor: Colors.white,
+                                items: const [
+                                  DropdownMenuItem(
+                                    value: 'Baik',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.check_circle_outline, color: Color(0xFF2E7D32), size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Baik', style: TextStyle(color: Color(0xFF2E7D32), fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Kurang Baik',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.warning_amber_rounded, color: Color(0xFFE65100), size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Kurang Baik', style: TextStyle(color: Color(0xFFE65100), fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
+                                  ),
+                                  DropdownMenuItem(
+                                    value: 'Rusak',
+                                    child: Row(
+                                      children: [
+                                        Icon(Icons.cancel_outlined, color: Color(0xFFC62828), size: 18),
+                                        SizedBox(width: 8),
+                                        Text('Rusak', style: TextStyle(color: Color(0xFFC62828), fontWeight: FontWeight.bold)),
+                                      ],
+                                    ),
                                   ),
                                 ],
-                                keyboardType: TextInputType.number,
-                                onChanged: (_) => dialogSetState(() => updateKodeBarang()),
-                              ),
-                              const SizedBox(height: 10),
-                              TextFormField(
-                                controller: telpUserController,
-                                decoration: themedInput(
-                                    'Telepon Pengguna', Icons.phone_outlined),
-                                inputFormatters: [
-                                  FilteringTextInputFormatter.allow(
-                                    RegExp(r'[0-9\-]'),
-                                  ),
-                                  LengthLimitingTextInputFormatter(15),
-                                ],
-                                keyboardType: TextInputType.phone,
-                                onChanged: (_) => dialogSetState(() => updateKodeBarang()),
+                                onChanged: (val) {
+                                  if (val != null) {
+                                    dialogSetState(() {
+                                      selectedKondisiAset = val;
+                                      updateKodeBarang();
+                                    });
+                                  }
+                                },
                               ),
                               const SizedBox(height: 20),
                               _sectionLabel(
@@ -3062,9 +3060,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                        merekModel: merekController.text,
                                        barcode: kodeController.text, // auto-generated from kodeBarang
                                        kodeBarang: kodeController.text,
-                                       namaPengguna: namaUserController.text,
-                                       nipPengguna: nipUserController.text,
-                                       teleponPengguna: telpUserController.text,
+                                       noRegister: noRegisterController.text,
+                                       kondisiAset: selectedKondisiAset,
                                        fotoUrl: fotoController.text,
                                        tahunPerolehan: tahunPerolehanController.text,
                                      );
@@ -3082,9 +3079,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                                   'jenis_barang': newItem.jenisBarang,
                                                   'merek_model': newItem.merekModel,
                                                   'kode_barang': newItem.kodeBarang,
-                                                  'nama_pengguna': newItem.namaPengguna,
-                                                  'nip_pengguna': newItem.nipPengguna,
-                                                  'telepon_pengguna': newItem.teleponPengguna,
+                                                  'no_register': newItem.noRegister,
+                                                  'kondisi_aset': newItem.kondisiAset,
                                                   'foto_url': newItem.fotoUrl,
                                                   'barcode': newItem.barcode,
                                                   'tahun_perolehan': newItem.tahunPerolehan,
@@ -3099,9 +3095,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                                   'jenis_barang': newItem.jenisBarang,
                                                   'merek_model': newItem.merekModel,
                                                   'kode_barang': newItem.kodeBarang,
-                                                  'nama_pengguna': newItem.namaPengguna,
-                                                  'nip_pengguna': newItem.nipPengguna,
-                                                  'telepon_pengguna': newItem.teleponPengguna,
+                                                  'no_register': newItem.noRegister,
+                                                  'kondisi_aset': newItem.kondisiAset,
                                                   'foto_url': newItem.fotoUrl,
                                                   'barcode': newItem.barcode,
                                                   'tahun_perolehan': newItem.tahunPerolehan,
@@ -3462,7 +3457,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                 item.jenisBarang.toLowerCase().contains(_itemSearchQuery) ||
                 item.merekModel.toLowerCase().contains(_itemSearchQuery) ||
                 item.kodeBarang.toLowerCase().contains(_itemSearchQuery) ||
-                item.namaPengguna.toLowerCase().contains(_itemSearchQuery))
+                item.noRegister.toLowerCase().contains(_itemSearchQuery) ||
+                item.kondisiAset.toLowerCase().contains(_itemSearchQuery))
             .toList();
 
     final rightPaneContent = Column(
@@ -4696,42 +4692,71 @@ class PublicItemListScreen extends StatelessWidget {
                                     ),
                                     const SizedBox(height: 2),
                                     Row(
-                                      children: [
-                                        const Icon(Icons.meeting_room_outlined,
-                                            size: 14, color: Colors.grey),
-                                        const SizedBox(width: 4),
-                                        Expanded(
-                                          child: Text(
-                                            'Ruangan: ${room.name}',
-                                            style: const TextStyle(
-                                              fontSize: 12,
-                                              color: Colors.grey,
-                                            ),
-                                            maxLines: 1,
-                                            overflow: TextOverflow.ellipsis,
-                                          ),
-                                        ),
-                                      ],
-                                    ),
-                                    if (item.namaPengguna.isNotEmpty) ...[
-                                      const SizedBox(height: 4),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 2),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF1A2F5A).withOpacity(0.08),
-                                          borderRadius: BorderRadius.circular(6),
-                                        ),
-                                        child: Text(
-                                          'User: ${item.namaPengguna}',
-                                          style: const TextStyle(
-                                            fontSize: 11,
-                                            fontWeight: FontWeight.w600,
-                                            color: Color(0xFF1A2F5A),
-                                          ),
-                                        ),
-                                      ),
-                                    ],
+                                       children: [
+                                         const Icon(Icons.meeting_room_outlined,
+                                             size: 14, color: Colors.grey),
+                                         const SizedBox(width: 4),
+                                         Expanded(
+                                           child: Text(
+                                             'Ruangan: ${room.name}',
+                                             style: const TextStyle(
+                                               fontSize: 12,
+                                               color: Colors.grey,
+                                             ),
+                                             maxLines: 1,
+                                             overflow: TextOverflow.ellipsis,
+                                           ),
+                                         ),
+                                       ],
+                                     ),
+                                     const SizedBox(height: 4),
+                                     Row(
+                                       children: [
+                                         if (item.noRegister.isNotEmpty) ...[
+                                           Container(
+                                             padding: const EdgeInsets.symmetric(
+                                                 horizontal: 8, vertical: 2),
+                                             decoration: BoxDecoration(
+                                               color: const Color(0xFF1A2F5A).withOpacity(0.08),
+                                               borderRadius: BorderRadius.circular(6),
+                                             ),
+                                             child: Text(
+                                               'Reg: ${item.noRegister}',
+                                               style: const TextStyle(
+                                                 fontSize: 11,
+                                                 fontWeight: FontWeight.w600,
+                                                 color: Color(0xFF1A2F5A),
+                                               ),
+                                             ),
+                                           ),
+                                           const SizedBox(width: 6),
+                                         ],
+                                         Container(
+                                           padding: const EdgeInsets.symmetric(
+                                               horizontal: 8, vertical: 2),
+                                           decoration: BoxDecoration(
+                                             color: item.kondisiAset.toLowerCase() == 'rusak'
+                                                 ? const Color(0xFFFFEBEE)
+                                                 : item.kondisiAset.toLowerCase() == 'kurang baik'
+                                                     ? const Color(0xFFFFF3E0)
+                                                     : const Color(0xFFE8F5E9),
+                                             borderRadius: BorderRadius.circular(6),
+                                           ),
+                                           child: Text(
+                                             item.kondisiAset.isNotEmpty ? item.kondisiAset : 'Baik',
+                                             style: TextStyle(
+                                               fontSize: 11,
+                                               fontWeight: FontWeight.w700,
+                                               color: item.kondisiAset.toLowerCase() == 'rusak'
+                                                   ? const Color(0xFFC62828)
+                                                   : item.kondisiAset.toLowerCase() == 'kurang baik'
+                                                       ? const Color(0xFFE65100)
+                                                       : const Color(0xFF2E7D32),
+                                             ),
+                                           ),
+                                         ),
+                                       ],
+                                     ),
                                   ],
                                 ),
                               ),

@@ -278,9 +278,9 @@ class GensetCard extends StatelessWidget {
                                 color: const Color(0xFFFFD5C8),
                               ),
                               SizedBox(height: 10 * scale),
-                              // Data Pengguna
+                              // Register & Kondisi Aset
                               Text(
-                                'Data Pengguna',
+                                'Register & Kondisi Aset',
                                 style: TextStyle(
                                   fontSize: 13 * scale,
                                   fontWeight: FontWeight.w900,
@@ -297,29 +297,16 @@ class GensetCard extends StatelessWidget {
                                       crossAxisAlignment: CrossAxisAlignment.start,
                                       children: [
                                         Text(
-                                          item.namaPengguna.isNotEmpty ? item.namaPengguna : '-',
+                                          'No. Reg: ${item.noRegister.isNotEmpty ? item.noRegister : '-'}',
                                           style: TextStyle(
-                                            fontSize: 10.5 * scale,
+                                            fontSize: 11 * scale,
+                                            fontWeight: FontWeight.w700,
                                             color: const Color(0xFF1A1A1A),
-                                            height: 1.6,
+                                            height: 1.4,
                                           ),
                                         ),
-                                        Text(
-                                          item.nipPengguna.isNotEmpty ? item.nipPengguna : '-',
-                                          style: TextStyle(
-                                            fontSize: 10 * scale,
-                                            color: const Color(0xFF555555),
-                                            height: 1.5,
-                                          ),
-                                        ),
-                                        Text(
-                                          item.teleponPengguna.isNotEmpty ? item.teleponPengguna : '-',
-                                          style: TextStyle(
-                                            fontSize: 10 * scale,
-                                            color: const Color(0xFF2A9D8F),
-                                            fontWeight: FontWeight.w600,
-                                          ),
-                                        ),
+                                        SizedBox(height: 5 * scale),
+                                        _buildKondisiChip(item.kondisiAset, scale),
                                       ],
                                     ),
                                   ),
@@ -405,6 +392,59 @@ class GensetCard extends StatelessWidget {
       child: Image.asset(
         'assets/logo_sulsel_original.png',
         fit: BoxFit.contain,
+      ),
+    );
+  }
+
+  Widget _buildKondisiChip(String kondisi, double scale) {
+    Color bg;
+    Color fg;
+    Color border;
+    IconData icon;
+
+    switch (kondisi.trim().toLowerCase()) {
+      case 'kurang baik':
+        bg = const Color(0xFFFFF3E0);
+        fg = const Color(0xFFE65100);
+        border = const Color(0xFFFFB74D);
+        icon = Icons.warning_amber_rounded;
+        break;
+      case 'rusak':
+        bg = const Color(0xFFFFEBEE);
+        fg = const Color(0xFFC62828);
+        border = const Color(0xFFEF9A9A);
+        icon = Icons.cancel_outlined;
+        break;
+      case 'baik':
+      default:
+        bg = const Color(0xFFE8F5E9);
+        fg = const Color(0xFF2E7D32);
+        border = const Color(0xFFA5D6A7);
+        icon = Icons.check_circle_outline;
+        break;
+    }
+
+    return Container(
+      padding: EdgeInsets.symmetric(horizontal: 8 * scale, vertical: 3 * scale),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(6),
+        border: Border.all(color: border, width: 1),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 11 * scale, color: fg),
+          SizedBox(width: 4 * scale),
+          Text(
+            kondisi.isNotEmpty ? kondisi : 'Baik',
+            style: TextStyle(
+              fontSize: 10 * scale,
+              fontWeight: FontWeight.w800,
+              color: fg,
+            ),
+          ),
+        ],
       ),
     );
   }
