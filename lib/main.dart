@@ -2874,7 +2874,9 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                     ),
                                   ],
                                 ],
-                                        _sectionLabel(
+                              ),
+                              const SizedBox(height: 16),
+                              _sectionLabel(
                                   'No. Register & Kondisi Aset',
                                   Icons.assignment_outlined,
                                   const Color(0xFFCFA836)),
