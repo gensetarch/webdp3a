@@ -127,3 +127,51 @@ class Room {
     );
   }
 }
+
+class Agency {
+  String id;
+  String name;
+  String barcode;
+  List<Room> rooms;
+
+  Agency({
+    required this.id,
+    required this.name,
+    required this.barcode,
+    required this.rooms,
+  });
+
+  Map<String, dynamic> toMap() {
+    return {
+      'id': id,
+      'name': name,
+      'barcode': barcode,
+      'rooms': rooms.map((x) => x.toMap()).toList(),
+    };
+  }
+
+  factory Agency.fromMap(Map<String, dynamic> map) {
+    return Agency(
+      id: map['id'] ?? '',
+      name: map['name'] ?? '',
+      barcode: map['barcode'] ?? '',
+      rooms: List<Room>.from(
+        (map['rooms'] as List<dynamic>?)?.map((x) => Room.fromMap(x as Map<String, dynamic>)) ?? const [],
+      ),
+    );
+  }
+
+  Agency copyWith({
+    String? id,
+    String? name,
+    String? barcode,
+    List<Room>? rooms,
+  }) {
+    return Agency(
+      id: id ?? this.id,
+      name: name ?? this.name,
+      barcode: barcode ?? this.barcode,
+      rooms: rooms ?? this.rooms,
+    );
+  }
+}

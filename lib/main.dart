@@ -102,6 +102,7 @@ class _MainAppControllerState extends State<MainAppController> {
 
   // Simulated database of rooms & items
   List<Room> _rooms = [];
+  List<Agency> _agencies = [];
 
   void setPublicRoomId(String? roomId) {
     setState(() {
@@ -260,6 +261,15 @@ class _MainAppControllerState extends State<MainAppController> {
 
       setState(() {
         _rooms = loadedRooms;
+        // Group all rooms under a default agency if no agencies table exists yet
+        _agencies = [
+          Agency(
+            id: 'agency-default',
+            name: 'DP3A',
+            barcode: 'INS-DP3A',
+            rooms: loadedRooms,
+          ),
+        ];
       });
     } catch (e) {
       debugPrint('Error fetching data from Supabase: $e');
@@ -423,6 +433,14 @@ class _MainAppControllerState extends State<MainAppController> {
             barcode: '1.3.2.10.02.03.003',
           ),
         ],
+      ),
+    ];
+    _agencies = [
+      Agency(
+        id: 'agency-dp3a',
+        name: 'DP3A',
+        barcode: 'INS-DP3A',
+        rooms: _rooms,
       ),
     ];
   }
@@ -606,8 +624,8 @@ class _MainAppControllerState extends State<MainAppController> {
       );
     }
 
-    return DashboardScreen(
-      rooms: _rooms,
+    return AgencyListScreen(
+      agencies: _agencies,
       onLogout: () {
         removeFromStorage('admin_logged_in');
         removeFromStorage('admin_current_room_id');
@@ -617,9 +635,10 @@ class _MainAppControllerState extends State<MainAppController> {
           _isAdminLoggedIn = false;
         });
       },
-      onRoomsChanged: (updatedRooms) {
+      onAgenciesChanged: (updatedAgencies) {
         setState(() {
-          _rooms = updatedRooms;
+          _agencies = updatedAgencies;
+          _rooms = updatedAgencies.expand((a) => a.rooms).toList();
         });
       },
       onScanPressed: () async {
@@ -1312,6 +1331,969 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+// ----------------------------------------------------
+// 1.5. AGENCY LIST SCREEN (INSTANSI)
+// ----------------------------------------------------
+class AgencyListScreen extends StatefulWidget {
+  final List<Agency> agencies;
+  final VoidCallback onLogout;
+  final ValueChanged<List<Agency>> onAgenciesChanged;
+  final VoidCallback onScanPressed;
+  final VoidCallback onHostOverrideChanged;
+
+  const AgencyListScreen({
+    Key? key,
+    required this.agencies,
+    required this.onLogout,
+    required this.onAgenciesChanged,
+    required this.onScanPressed,
+    required this.onHostOverrideChanged,
+  }) : super(key: key);
+
+  @override
+  State<AgencyListScreen> createState() => _AgencyListScreenState();
+}
+
+class _AgencyListScreenState extends State<AgencyListScreen> {
+  List<Agency> get agencies => widget.agencies;
+
+  final TextEditingController _searchController = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchController.addListener(() {
+      setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
+    });
+  }
+
+  @override
+  void dispose() {
+    _searchController.dispose();
+    super.dispose();
+  }
+
+  // ── Logout dialog ──────────────────────────────────────────────────────────
+  void _showLogoutConfirmation() async {
+    final confirm = await showDialog<bool>(
+      context: context,
+      barrierColor: Colors.black.withOpacity(0.45),
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        elevation: 8,
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 320),
+          padding: const EdgeInsets.fromLTRB(24, 24, 24, 16),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A2F5A).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.logout_rounded, color: Color(0xFF1A2F5A), size: 20),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text('Keluar', style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A2F5A))),
+                ],
+              ),
+              const SizedBox(height: 12),
+              Container(height: 1, color: const Color(0xFFEEF2F8)),
+              const SizedBox(height: 12),
+              const Text('Apakah anda yakin untuk keluar dari Panel Admin?',
+                  style: TextStyle(fontSize: 13, color: Color(0xFF4A5568), height: 1.4)),
+              const SizedBox(height: 24),
+              Row(
+                mainAxisAlignment: MainAxisAlignment.end,
+                children: [
+                  OutlinedButton(
+                    style: OutlinedButton.styleFrom(
+                      side: const BorderSide(color: Color(0xFFD0D8E8)),
+                      foregroundColor: const Color(0xFF4A5568),
+                      padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                    ),
+                    onPressed: () => Navigator.pop(ctx, false),
+                    child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
+                  ),
+                  const SizedBox(width: 10),
+                  Container(
+                    decoration: BoxDecoration(
+                      gradient: const LinearGradient(colors: [Color(0xFF1A2F5A), Color(0xFF2D4A8A)]),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: ElevatedButton(
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: Colors.transparent,
+                        foregroundColor: Colors.white,
+                        shadowColor: Colors.transparent,
+                        elevation: 0,
+                        padding: const EdgeInsets.symmetric(horizontal: 22, vertical: 11),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                      onPressed: () => Navigator.pop(ctx, true),
+                      child: const Text('Ya, Keluar', style: TextStyle(fontWeight: FontWeight.bold)),
+                    ),
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+    if (confirm == true && mounted) {
+      widget.onLogout();
+    }
+  }
+
+  // ── Add Agency dialog ──────────────────────────────────────────────────────
+  void _showAddAgencyDialog() {
+    final nameController = TextEditingController();
+    final formKey = GlobalKey<FormState>();
+
+    InputDecoration _navyInput(String label, String hint, IconData icon) {
+      return InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: const TextStyle(color: Color(0xFF4A5568), fontSize: 13),
+        prefixIcon: Icon(icon, color: const Color(0xFF1A2F5A), size: 18),
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFFD0D8E8))),
+        enabledBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFFD0D8E8))),
+        focusedBorder: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(10),
+            borderSide: const BorderSide(color: Color(0xFF1A2F5A), width: 1.5)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      );
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(colors: [Color(0xFF1A2F5A), Color(0xFF1E3A6E)]),
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.domain_add_rounded, color: Color(0xFFE8C155), size: 22),
+                      SizedBox(width: 10),
+                      Text('Tambah Instansi Baru',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        TextFormField(
+                          controller: nameController,
+                          decoration: _navyInput('Nama Instansi', 'Misal: DP3A', Icons.domain_rounded),
+                          validator: (v) => (v == null || v.isEmpty) ? 'Nama instansi tidak boleh kosong' : null,
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFFE53935)),
+                                foregroundColor: const Color(0xFFE53935),
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ),
+                            const SizedBox(width: 10),
+                            Container(
+                              decoration: BoxDecoration(
+                                gradient: const LinearGradient(colors: [Color(0xFF1A2F5A), Color(0xFF2D4A8A)]),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: ElevatedButton.icon(
+                                onPressed: () async {
+                                  if (formKey.currentState!.validate()) {
+                                    final newAgency = Agency(
+                                      id: 'agency-${DateTime.now().millisecondsSinceEpoch}',
+                                      name: nameController.text.trim(),
+                                      barcode: 'INS-${nameController.text.trim().toUpperCase().replaceAll(' ', '-')}',
+                                      rooms: [],
+                                    );
+                                    if (isSupabaseConfigured) {
+                                      try {
+                                        await Supabase.instance.client.from('agencies').insert({
+                                          'id': newAgency.id,
+                                          'name': newAgency.name,
+                                          'barcode': newAgency.barcode,
+                                        });
+                                      } catch (e) {
+                                        debugPrint('Supabase Agency Insert Error: $e');
+                                        if (context.mounted) {
+                                          ScaffoldMessenger.of(context).showSnackBar(
+                                            SnackBar(content: Text('Gagal simpan ke database: $e'), backgroundColor: const Color(0xFF1A2F5A), duration: const Duration(seconds: 6)),
+                                          );
+                                        }
+                                      }
+                                    }
+                                    widget.onAgenciesChanged([newAgency, ...agencies]);
+                                    if (context.mounted) Navigator.pop(context);
+                                  }
+                                },
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: Colors.transparent,
+                                  foregroundColor: Colors.white,
+                                  shadowColor: Colors.transparent,
+                                  elevation: 0,
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                icon: const Icon(Icons.save_outlined, size: 16),
+                                label: const Text('Simpan', style: TextStyle(fontWeight: FontWeight.w700)),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  // ── Edit Agency dialog ─────────────────────────────────────────────────────
+  void _showEditAgencyDialog(Agency agency) {
+    final nameController = TextEditingController(text: agency.name);
+    final formKey = GlobalKey<FormState>();
+    bool _hasChanges = false;
+
+    nameController.addListener(() {
+      _hasChanges = nameController.text.trim() != agency.name;
+    });
+
+    InputDecoration _navyInput(String label, String hint, IconData icon) {
+      return InputDecoration(
+        labelText: label,
+        hintText: hint,
+        labelStyle: const TextStyle(color: Color(0xFF4A5568), fontSize: 13),
+        prefixIcon: Icon(icon, color: const Color(0xFF1A2F5A), size: 18),
+        filled: true,
+        fillColor: const Color(0xFFF8FAFC),
+        border: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFD0D8E8))),
+        enabledBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFFD0D8E8))),
+        focusedBorder: OutlineInputBorder(borderRadius: BorderRadius.circular(10), borderSide: const BorderSide(color: Color(0xFF1A2F5A), width: 1.5)),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      );
+    }
+
+    showDialog(
+      context: context,
+      builder: (context) {
+        return StatefulBuilder(builder: (context, dialogSetState) {
+          nameController.addListener(() {
+            dialogSetState(() {
+              _hasChanges = nameController.text.trim() != agency.name;
+            });
+          });
+          return Dialog(
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+            child: Container(
+              constraints: const BoxConstraints(maxWidth: 420),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Container(
+                    width: double.infinity,
+                    padding: const EdgeInsets.all(20),
+                    decoration: const BoxDecoration(
+                      gradient: LinearGradient(colors: [Color(0xFF1A2F5A), Color(0xFF1E3A6E)]),
+                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+                    ),
+                    child: const Row(
+                      children: [
+                        Icon(Icons.edit_outlined, color: Color(0xFFE8C155), size: 22),
+                        SizedBox(width: 10),
+                        Text('Edit Data Instansi',
+                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                      ],
+                    ),
+                  ),
+                  Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Form(
+                      key: formKey,
+                      child: Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          TextFormField(
+                            controller: nameController,
+                            decoration: _navyInput('Nama Instansi', 'Misal: DP3A', Icons.domain_rounded),
+                            validator: (v) => (v == null || v.isEmpty) ? 'Nama instansi tidak boleh kosong' : null,
+                          ),
+                          const SizedBox(height: 20),
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.end,
+                            children: [
+                              OutlinedButton(
+                                onPressed: () => Navigator.pop(context),
+                                style: OutlinedButton.styleFrom(
+                                  side: const BorderSide(color: Color(0xFFE53935)),
+                                  foregroundColor: const Color(0xFFE53935),
+                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                ),
+                                child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
+                              ),
+                              const SizedBox(width: 10),
+                              Container(
+                                decoration: BoxDecoration(
+                                  gradient: LinearGradient(
+                                    colors: _hasChanges
+                                        ? [const Color(0xFF1A2F5A), const Color(0xFF2D4A8A)]
+                                        : [Colors.grey.shade300, Colors.grey.shade300],
+                                  ),
+                                  borderRadius: BorderRadius.circular(10),
+                                ),
+                                child: ElevatedButton.icon(
+                                  onPressed: _hasChanges ? () async {
+                                    if (formKey.currentState!.validate()) {
+                                      final newName = nameController.text.trim();
+                                      final newBarcode = 'INS-${newName.toUpperCase().replaceAll(' ', '-')}';
+                                      if (isSupabaseConfigured) {
+                                        try {
+                                          await Supabase.instance.client.from('agencies').update({
+                                            'name': newName,
+                                            'barcode': newBarcode,
+                                          }).eq('id', agency.id);
+                                        } catch (e) {
+                                          debugPrint('Supabase Agency Update Error: $e');
+                                        }
+                                      }
+                                      final updated = agencies.map((a) {
+                                        if (a.id == agency.id) return a.copyWith(name: newName, barcode: newBarcode);
+                                        return a;
+                                      }).toList();
+                                      widget.onAgenciesChanged(updated);
+                                      if (context.mounted) Navigator.pop(context);
+                                    }
+                                  } : null,
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: Colors.transparent,
+                                    foregroundColor: Colors.white,
+                                    shadowColor: Colors.transparent,
+                                    elevation: 0,
+                                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                                  ),
+                                  icon: const Icon(Icons.save_outlined, size: 16),
+                                  label: const Text('Simpan Perubahan', style: TextStyle(fontWeight: FontWeight.w700)),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  // ── Delete Agency ──────────────────────────────────────────────────────────
+  Future<void> _deleteAgency(Agency agency) async {
+    if (isSupabaseConfigured) {
+      try {
+        await Supabase.instance.client.from('agencies').delete().eq('id', agency.id);
+      } catch (e) {
+        debugPrint('Supabase Agency Delete Error: $e');
+      }
+    }
+    final updated = agencies.where((a) => a.id != agency.id).toList();
+    widget.onAgenciesChanged(updated);
+  }
+
+  // ── QR Dialog ─────────────────────────────────────────────────────────────
+  void _showQrDialog(Agency agency) {
+    final qrData = 'INS:${agency.id}';
+    showDialog(
+      context: context,
+      builder: (ctx) => Dialog(
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: Container(
+          constraints: const BoxConstraints(maxWidth: 340),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(20),
+                decoration: const BoxDecoration(
+                  gradient: LinearGradient(colors: [Color(0xFF1A2F5A), Color(0xFF1E3A6E)]),
+                  borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+                ),
+                child: Row(
+                  children: [
+                    const Icon(Icons.qr_code_2_rounded, color: Color(0xFFE8C155), size: 22),
+                    const SizedBox(width: 10),
+                    Expanded(
+                      child: Text('QR Instansi: ${agency.name}',
+                          style: const TextStyle(fontSize: 15, fontWeight: FontWeight.w800, color: Colors.white),
+                          overflow: TextOverflow.ellipsis),
+                    ),
+                  ],
+                ),
+              ),
+              Padding(
+                padding: const EdgeInsets.all(24),
+                child: Column(
+                  children: [
+                    QRCodeWidget(data: qrData, size: 200),
+                    const SizedBox(height: 16),
+                    Text(agency.name,
+                        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF1A2F5A))),
+                    const SizedBox(height: 4),
+                    Text(agency.barcode,
+                        style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                    const SizedBox(height: 20),
+                    OutlinedButton.icon(
+                      onPressed: () => Navigator.pop(ctx),
+                      icon: const Icon(Icons.close_rounded, size: 16),
+                      label: const Text('Tutup'),
+                      style: OutlinedButton.styleFrom(
+                        side: const BorderSide(color: Color(0xFFD0D8E8)),
+                        foregroundColor: const Color(0xFF4A5568),
+                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 10),
+                        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final year = DateTime.now().year;
+    final filteredAgencies = _searchQuery.isEmpty
+        ? agencies
+        : agencies.where((a) => a.name.toLowerCase().contains(_searchQuery)).toList();
+
+    return Scaffold(
+      backgroundColor: const Color(0xFFF0F4FA),
+      body: Row(
+        children: [
+          // ── Left Sidebar ───────────────────────────────────────────────────
+          Container(
+            width: 240,
+            decoration: const BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [Color(0xFF1A2F5A), Color(0xFF0F1F3D)],
+              ),
+            ),
+            child: Column(
+              children: [
+                const SizedBox(height: 32),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE8C155).withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: const Icon(Icons.domain_rounded, color: Color(0xFFE8C155), size: 24),
+                      ),
+                      const SizedBox(width: 12),
+                      const Expanded(
+                        child: Text('Panel Admin',
+                            style: TextStyle(color: Colors.white, fontSize: 16, fontWeight: FontWeight.bold)),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: 8),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 20),
+                  child: Text('DP3A DALDUK KB\nSulawesi Selatan',
+                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11, height: 1.4)),
+                ),
+                const SizedBox(height: 24),
+                Container(height: 1, color: Colors.white.withOpacity(0.08), margin: const EdgeInsets.symmetric(horizontal: 20)),
+                const SizedBox(height: 16),
+                Padding(
+                  padding: const EdgeInsets.symmetric(horizontal: 16),
+                  child: Container(
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFE8C155).withOpacity(0.12),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFE8C155).withOpacity(0.3)),
+                    ),
+                    child: ListTile(
+                      dense: true,
+                      leading: const Icon(Icons.domain_rounded, color: Color(0xFFE8C155), size: 20),
+                      title: const Text('Daftar Instansi', style: TextStyle(color: Color(0xFFE8C155), fontWeight: FontWeight.bold, fontSize: 13)),
+                    ),
+                  ),
+                ),
+                const Spacer(),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    children: [
+                      Container(height: 1, color: Colors.white.withOpacity(0.08)),
+                      const SizedBox(height: 16),
+                      Text('© $year DP3A DALDUK KB\nProvinsi Sulawesi Selatan',
+                          style: TextStyle(color: Colors.white.withOpacity(0.3), fontSize: 10, height: 1.5),
+                          textAlign: TextAlign.center),
+                      const SizedBox(height: 12),
+                      SizedBox(
+                        width: double.infinity,
+                        child: OutlinedButton.icon(
+                          onPressed: _showLogoutConfirmation,
+                          icon: const Icon(Icons.logout_rounded, size: 16),
+                          label: const Text('Keluar', style: TextStyle(fontWeight: FontWeight.w600)),
+                          style: OutlinedButton.styleFrom(
+                            side: BorderSide(color: Colors.white.withOpacity(0.2)),
+                            foregroundColor: Colors.white.withOpacity(0.7),
+                            padding: const EdgeInsets.symmetric(vertical: 10),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // ── Main Content ───────────────────────────────────────────────────
+          Expanded(
+            child: Column(
+              children: [
+                // Top bar
+                Container(
+                  height: 64,
+                  padding: const EdgeInsets.symmetric(horizontal: 28),
+                  decoration: const BoxDecoration(
+                    color: Colors.white,
+                    border: Border(bottom: BorderSide(color: Color(0xFFEEF2F8))),
+                  ),
+                  child: Row(
+                    children: [
+                      const Text('Manajemen Instansi',
+                          style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold, color: Color(0xFF1A2F5A))),
+                      const Spacer(),
+                      // Scan button
+                      OutlinedButton.icon(
+                        onPressed: widget.onScanPressed,
+                        icon: const Icon(Icons.qr_code_scanner_rounded, size: 18),
+                        label: const Text('Scan QR'),
+                        style: OutlinedButton.styleFrom(
+                          side: const BorderSide(color: Color(0xFFD0D8E8)),
+                          foregroundColor: const Color(0xFF1A2F5A),
+                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      // Add agency button
+                      Container(
+                        decoration: BoxDecoration(
+                          gradient: const LinearGradient(colors: [Color(0xFF1A2F5A), Color(0xFF2D4A8A)]),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: ElevatedButton.icon(
+                          onPressed: _showAddAgencyDialog,
+                          icon: const Icon(Icons.add, size: 18),
+                          label: const Text('Tambah Instansi'),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: Colors.transparent,
+                            foregroundColor: Colors.white,
+                            shadowColor: Colors.transparent,
+                            elevation: 0,
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Content
+                Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.all(28),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        // Stats row
+                        Row(
+                          children: [
+                            _StatCard(
+                              icon: Icons.domain_rounded,
+                              label: 'Total Instansi',
+                              value: '${agencies.length}',
+                              color: const Color(0xFF1A2F5A),
+                            ),
+                            const SizedBox(width: 16),
+                            _StatCard(
+                              icon: Icons.meeting_room_rounded,
+                              label: 'Total Ruangan',
+                              value: '${agencies.fold(0, (s, a) => s + a.rooms.length)}',
+                              color: const Color(0xFF2D7D46),
+                            ),
+                            const SizedBox(width: 16),
+                            _StatCard(
+                              icon: Icons.inventory_2_rounded,
+                              label: 'Total Aset',
+                              value: '${agencies.fold(0, (s, a) => s + a.rooms.fold(0, (rs, r) => rs + r.items.length))}',
+                              color: const Color(0xFFC08000),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 24),
+
+                        // Search bar
+                        Row(
+                          children: [
+                            Expanded(
+                              child: Container(
+                                height: 44,
+                                decoration: BoxDecoration(
+                                  color: Colors.white,
+                                  borderRadius: BorderRadius.circular(10),
+                                  border: Border.all(color: const Color(0xFFD0D8E8)),
+                                ),
+                                child: TextField(
+                                  controller: _searchController,
+                                  decoration: InputDecoration(
+                                    hintText: 'Cari instansi...',
+                                    hintStyle: const TextStyle(color: Color(0xFF9EB0C8), fontSize: 14),
+                                    prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF1A2F5A), size: 20),
+                                    suffixIcon: _searchQuery.isNotEmpty
+                                        ? IconButton(
+                                            icon: const Icon(Icons.close_rounded, color: Color(0xFF1A2F5A), size: 18),
+                                            onPressed: () => _searchController.clear(),
+                                          )
+                                        : null,
+                                    border: InputBorder.none,
+                                    contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 20),
+
+                        // Agency grid
+                        Expanded(
+                          child: agencies.isEmpty
+                              ? Center(
+                                  child: Column(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      Icon(Icons.domain_disabled_rounded, size: 72,
+                                          color: const Color(0xFF1A2F5A).withOpacity(0.15)),
+                                      const SizedBox(height: 16),
+                                      const Text('Belum ada instansi',
+                                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600, color: Color(0xFF4A5568))),
+                                      const SizedBox(height: 8),
+                                      const Text('Klik "Tambah Instansi" untuk membuat instansi baru',
+                                          style: TextStyle(fontSize: 13, color: Color(0xFF9EB0C8))),
+                                    ],
+                                  ),
+                                )
+                              : filteredAgencies.isEmpty
+                                  ? Center(
+                                      child: Text('Instansi "${_searchController.text}" tidak ditemukan',
+                                          style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14)),
+                                    )
+                                  : GridView.builder(
+                                      gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
+                                        maxCrossAxisExtent: 380,
+                                        mainAxisExtent: 230,
+                                        crossAxisSpacing: 20,
+                                        mainAxisSpacing: 20,
+                                      ),
+                                      itemCount: filteredAgencies.length,
+                                      itemBuilder: (context, index) {
+                                        final agency = filteredAgencies[index];
+                                        final roomCount = agency.rooms.length;
+                                        final assetCount = agency.rooms.fold(0, (s, r) => s + r.items.length);
+                                        return Card(
+                                          elevation: 0,
+                                          color: Colors.white,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(14),
+                                            side: BorderSide(color: Colors.grey[200]!),
+                                          ),
+                                          child: Padding(
+                                            padding: const EdgeInsets.all(18.0),
+                                            child: Column(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
+                                              children: [
+                                                Row(
+                                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                                  children: [
+                                                    Container(
+                                                      padding: const EdgeInsets.all(10),
+                                                      decoration: BoxDecoration(
+                                                        color: const Color(0xFF1A2F5A).withOpacity(0.08),
+                                                        borderRadius: BorderRadius.circular(10),
+                                                      ),
+                                                      child: const Icon(Icons.domain_rounded, color: Color(0xFF1A2F5A), size: 22),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    Expanded(
+                                                      child: Column(
+                                                        crossAxisAlignment: CrossAxisAlignment.start,
+                                                        children: [
+                                                          Text(agency.name,
+                                                              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold, color: Color(0xFF111111)),
+                                                              overflow: TextOverflow.ellipsis),
+                                                          const SizedBox(height: 2),
+                                                          Text(agency.barcode,
+                                                              style: const TextStyle(fontSize: 11, color: Color(0xFF9EB0C8))),
+                                                        ],
+                                                      ),
+                                                    ),
+                                                    // QR button
+                                                    IconButton(
+                                                      onPressed: () => _showQrDialog(agency),
+                                                      icon: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF1A2F5A), size: 20),
+                                                      tooltip: 'Lihat QR Instansi',
+                                                      padding: EdgeInsets.zero,
+                                                      constraints: const BoxConstraints(),
+                                                    ),
+                                                  ],
+                                                ),
+                                                const SizedBox(height: 14),
+                                                Row(
+                                                  children: [
+                                                    _InfoChip(icon: Icons.meeting_room_outlined, label: '$roomCount Ruangan', color: const Color(0xFF1A2F5A)),
+                                                    const SizedBox(width: 8),
+                                                    _InfoChip(icon: Icons.inventory_2_outlined, label: '$assetCount Aset', color: const Color(0xFF2D7D46)),
+                                                  ],
+                                                ),
+                                                const Spacer(),
+                                                Row(
+                                                  mainAxisAlignment: MainAxisAlignment.end,
+                                                  children: [
+                                                    // Edit
+                                                    IconButton(
+                                                      onPressed: () => _showEditAgencyDialog(agency),
+                                                      icon: const Icon(Icons.edit_outlined, color: Color(0xFF1A2F5A), size: 20),
+                                                      tooltip: 'Edit Instansi',
+                                                      padding: EdgeInsets.zero,
+                                                      constraints: const BoxConstraints(),
+                                                    ),
+                                                    const SizedBox(width: 12),
+                                                    // Delete
+                                                    IconButton(
+                                                      onPressed: () async {
+                                                        final confirm = await showDialog<bool>(
+                                                          context: context,
+                                                          builder: (ctx) => AlertDialog(
+                                                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+                                                            title: const Text('Hapus Instansi?', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                                                            content: Text('Yakin ingin menghapus instansi "${agency.name}"? Semua ruangan & aset di dalamnya juga akan terhapus.'),
+                                                            actions: [
+                                                              TextButton(
+                                                                onPressed: () => Navigator.pop(ctx, false),
+                                                                child: const Text('Batal', style: TextStyle(color: Color(0xFF4A5568))),
+                                                              ),
+                                                              TextButton(
+                                                                onPressed: () => Navigator.pop(ctx, true),
+                                                                child: const Text('Hapus', style: TextStyle(color: Colors.red, fontWeight: FontWeight.bold)),
+                                                              ),
+                                                            ],
+                                                          ),
+                                                        );
+                                                        if (confirm == true) await _deleteAgency(agency);
+                                                      },
+                                                      icon: const Icon(Icons.delete_outline_rounded, color: Colors.red, size: 20),
+                                                      tooltip: 'Hapus Instansi',
+                                                      padding: EdgeInsets.zero,
+                                                      constraints: const BoxConstraints(),
+                                                    ),
+                                                    const Spacer(),
+                                                    // Open rooms
+                                                    Container(
+                                                      decoration: BoxDecoration(
+                                                        gradient: const LinearGradient(colors: [Color(0xFF1A2F5A), Color(0xFF2D4A8A)]),
+                                                        borderRadius: BorderRadius.circular(8),
+                                                      ),
+                                                      child: ElevatedButton(
+                                                        onPressed: () {
+                                                          Navigator.push(
+                                                            context,
+                                                            MaterialPageRoute(
+                                                              builder: (context) => DashboardScreen(
+                                                                rooms: agency.rooms,
+                                                                onLogout: widget.onLogout,
+                                                                onRoomsChanged: (updatedRooms) {
+                                                                  final updatedAgency = agency.copyWith(rooms: updatedRooms);
+                                                                  final updatedAll = agencies.map((a) => a.id == agency.id ? updatedAgency : a).toList();
+                                                                  widget.onAgenciesChanged(updatedAll);
+                                                                },
+                                                                onScanPressed: widget.onScanPressed,
+                                                                onHostOverrideChanged: widget.onHostOverrideChanged,
+                                                              ),
+                                                            ),
+                                                          );
+                                                        },
+                                                        style: ElevatedButton.styleFrom(
+                                                          backgroundColor: Colors.transparent,
+                                                          foregroundColor: Colors.white,
+                                                          shadowColor: Colors.transparent,
+                                                          elevation: 0,
+                                                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                                                          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                                                        ),
+                                                        child: const Text('Buka Ruangan', style: TextStyle(fontWeight: FontWeight.w700, fontSize: 13)),
+                                                      ),
+                                                    ),
+                                                  ],
+                                                ),
+                                              ],
+                                            ),
+                                          ),
+                                        );
+                                      },
+                                    ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Helper widgets ─────────────────────────────────────────────────────────────
+class _StatCard extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final String value;
+  final Color color;
+
+  const _StatCard({required this.icon, required this.label, required this.value, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Expanded(
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: const Color(0xFFEEF2F8)),
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: color, size: 22),
+            ),
+            const SizedBox(width: 14),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
+                Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InfoChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final Color color;
+
+  const _InfoChip({required this.icon, required this.label, required this.color});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.08),
+        borderRadius: BorderRadius.circular(6),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Icon(icon, size: 12, color: color),
+          const SizedBox(width: 4),
+          Text(label, style: TextStyle(fontSize: 11, fontWeight: FontWeight.w600, color: color)),
+        ],
       ),
     );
   }
