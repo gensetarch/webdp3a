@@ -5738,6 +5738,11 @@ class PublicRoomScreen extends StatelessWidget {
         ),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back_rounded),
+          onPressed: onBackToLogin,
+          tooltip: 'Kembali',
+        ),
         title: Text('GENSET Ruangan: ${room.name}'),
       ),
       body: Center(
