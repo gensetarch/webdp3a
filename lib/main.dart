@@ -2507,6 +2507,18 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     bool isUploadingFoto = false;
     bool isSaving = false;
 
+    // Helper: cek apakah ada perubahan dari data asli (hanya relevan saat edit)
+    bool hasChanges() {
+      if (!isEditing) return true; // mode tambah selalu aktif
+      return jenisController.text != (itemToEdit!.jenisBarang) ||
+          merekController.text != (itemToEdit!.merekModel) ||
+          kodeController.text != (itemToEdit!.kodeBarang) ||
+          noRegisterController.text != (itemToEdit!.noRegister) ||
+          selectedKondisiAset != (itemToEdit!.kondisiAset) ||
+          fotoController.text != (itemToEdit!.fotoUrl) ||
+          tahunPerolehanController.text != (itemToEdit!.tahunPerolehan);
+    }
+
     // Variabel state lokal dialog untuk pencarian autofill
     Item? matchedItem;
     Room? matchedRoom;
@@ -3151,12 +3163,17 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                               TextButton(
                                 onPressed: () => Navigator.pop(context),
                                 style: TextButton.styleFrom(
-                                    foregroundColor: const Color(0xFF888888)),
-                                child: const Text('Batal'),
+                                    foregroundColor: Colors.white,
+                                    backgroundColor: Colors.red.shade600,
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 14),
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(10))),
+                                child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.bold)),
                               ),
                               const SizedBox(width: 12),
                                ElevatedButton.icon(
-                                onPressed: isSaving ? null : () async {
+                                onPressed: (isSaving || !hasChanges()) ? null : () async {
                                   if (isSaving) return;
                                   dialogSetState(() => isSaving = true);
                                   try {
