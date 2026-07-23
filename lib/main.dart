@@ -2908,11 +2908,8 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
 
                                       final trimmedVal = v.trim();
                                       final currentJenis = jenisController.text.trim();
-                                      final currentMerek = merekController.text.trim();
 
-
-
-                                      // 2. Cek apakah kode ini sudah digunakan oleh barang dengan jenis/merek lain
+                                      // Cek apakah kode ini sudah digunakan oleh barang dengan jenis yang berbeda
                                       Item? sameCodeItem;
                                       for (var r in _allRooms) {
                                         for (var i in r.items) {
@@ -2927,10 +2924,9 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                       if (sameCodeItem != null) {
                                         final sameJenis = sameCodeItem.jenisBarang.trim().toLowerCase() ==
                                             currentJenis.toLowerCase();
-                                        final sameMerek = sameCodeItem.merekModel.trim().toLowerCase() ==
-                                            currentMerek.toLowerCase();
-                                        if (!sameJenis || !sameMerek) {
-                                          return 'Kode ini milik "${sameCodeItem.jenisBarang} - ${sameCodeItem.merekModel}". Nama & Merek harus sama!';
+                                        // Hanya cek jenis barang — merek boleh berbeda
+                                        if (!sameJenis) {
+                                          return 'Kode ini milik jenis "${sameCodeItem.jenisBarang}". Jenis barang harus sama (merek boleh berbeda)!';
                                         }
                                       }
                                       return null;
