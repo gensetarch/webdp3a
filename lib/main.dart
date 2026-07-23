@@ -29,6 +29,10 @@ String generateRoomUrl(String roomId) {
   return '$kPublicBaseUrl/?room=$roomId';
 }
 
+String generateAgencyUrl(String agencyId) {
+  return '$kPublicBaseUrl/?agency=$agencyId';
+}
+
 String generateItemUrl(String itemId) {
   return '$kPublicBaseUrl/?item=$itemId';
 }
@@ -2135,13 +2139,13 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                                         ],
                                                       ),
                                                     ),
-                                                    // QR button
-                                                    IconButton(
-                                                      onPressed: () => _showQrDialog(agency),
-                                                      icon: const Icon(Icons.qr_code_2_rounded, color: Color(0xFF1A2F5A), size: 20),
-                                                      tooltip: 'Lihat QR Instansi',
-                                                      padding: EdgeInsets.zero,
-                                                      constraints: const BoxConstraints(),
+                                                    InkWell(
+                                                      onTap: () => _showQrDialog(agency),
+                                                      borderRadius: BorderRadius.circular(6),
+                                                      child: QRCodeWidget(
+                                                        data: generateAgencyUrl(agency.id),
+                                                        size: 55,
+                                                      ),
                                                     ),
                                                   ],
                                                 ),
