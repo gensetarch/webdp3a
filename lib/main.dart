@@ -288,6 +288,7 @@ class _MainAppControllerState extends State<MainAppController> {
                       builder: (context) => RoomDetailsScreen(
                         room: targetRoom,
                         allRooms: _rooms,
+                        agencyId: targetAgency.id,
                         onRoomsChanged: (updatedRooms) {
                           setState(() {
                             _rooms = updatedRooms;
@@ -312,6 +313,7 @@ class _MainAppControllerState extends State<MainAppController> {
                   builder: (context) => RoomDetailsScreen(
                     room: roomMatches.first,
                     allRooms: _rooms,
+                    agencyId: null,
                     onRoomsChanged: (updatedRooms) {
                       setState(() {
                         _rooms = updatedRooms;
@@ -3617,6 +3619,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                         RoomDetailsScreen(
                                                       room: room,
                                                       allRooms: rooms,
+                                                      agencyId: widget.agencyId,
                                                       onRoomsChanged: onRoomsChanged,
                                                     ),
                                                   ),
@@ -3661,12 +3664,14 @@ class RoomDetailsScreen extends StatefulWidget {
   final Room room;
   final ValueChanged<List<Room>> onRoomsChanged;
   final List<Room> allRooms;
+  final String? agencyId;
 
   const RoomDetailsScreen({
     Key? key,
     required this.room,
     required this.onRoomsChanged,
     required this.allRooms,
+    this.agencyId,
   }) : super(key: key);
 
   @override
@@ -4447,6 +4452,18 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
 
                                      if (isSupabaseConfigured) {
                                        try {
+                                         // Pastikan ruangan sudah terdaftar di DB agar FK tidak melanggar
+                                         final roomData = <String, dynamic>{
+                                           'id': _room.id,
+                                           'name': _room.name,
+                                           'year': _room.year,
+                                           'barcode': _room.barcode,
+                                         };
+                                         if (widget.agencyId != null && widget.agencyId!.isNotEmpty) {
+                                           roomData['agency_id'] = widget.agencyId!;
+                                         }
+                                         await Supabase.instance.client.from('rooms').upsert(roomData);
+
                                          if (isEditing) {
                                             await Supabase.instance.client
                                                 .from('items')
