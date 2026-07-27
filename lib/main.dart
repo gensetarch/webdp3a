@@ -281,17 +281,62 @@ class _MainAppControllerState extends State<MainAppController> {
         ));
       }
 
+      // Fetch agencies from Supabase
+      List<Agency> loadedAgencies = [];
+      try {
+        final agenciesResponse = await client.from('agencies').select().order('name');
+        if (agenciesResponse != null && (agenciesResponse as List).isNotEmpty) {
+          for (var agencyData in agenciesResponse) {
+            final agencyId = agencyData['id'] as String;
+            final agencyName = agencyData['name'] ?? '';
+            final agencyBarcode = agencyData['barcode'] ?? '';
+
+            final agencyRooms = loadedRooms.where((room) {
+              final rawRoomData = (roomsResponse as List).firstWhere(
+                (r) => r['id'] == room.id,
+                orElse: () => null,
+              );
+              final rAgencyId = rawRoomData != null ? rawRoomData['agency_id'] : null;
+              if (rAgencyId != null && rAgencyId.toString().isNotEmpty) {
+                return rAgencyId == agencyId;
+              }
+              return agencyId == (agenciesResponse.first['id']) || agencyId == 'agency-default';
+            }).toList();
+
+            loadedAgencies.add(Agency(
+              id: agencyId,
+              name: agencyName,
+              barcode: agencyBarcode,
+              rooms: agencyRooms,
+            ));
+          }
+        }
+      } catch (e) {
+        debugPrint('Error fetching agencies from Supabase: $e');
+      }
+
+      if (loadedAgencies.isEmpty) {
+        final defaultAgency = Agency(
+          id: 'agency-default',
+          name: 'DP3A',
+          barcode: 'INS-DP3A',
+          rooms: loadedRooms,
+        );
+        loadedAgencies = [defaultAgency];
+        try {
+          await client.from('agencies').upsert({
+            'id': defaultAgency.id,
+            'name': defaultAgency.name,
+            'barcode': defaultAgency.barcode,
+          });
+        } catch (e) {
+          debugPrint('Default agency upsert error: $e');
+        }
+      }
+
       setState(() {
         _rooms = loadedRooms;
-        // Group all rooms under a default agency if no agencies table exists yet
-        _agencies = [
-          Agency(
-            id: 'agency-default',
-            name: 'DP3A',
-            barcode: 'INS-DP3A',
-            rooms: loadedRooms,
-          ),
-        ];
+        _agencies = loadedAgencies;
       });
     } catch (e) {
       debugPrint('Error fetching data from Supabase: $e');
@@ -1670,7 +1715,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                         TextFormField(
                           controller: nameController,
                           decoration: _navyInput('Nama Instansi', 'Misal: DP3A', Icons.domain_rounded),
-                          validator: (v) => (v == null || v.isEmpty) ? 'Nama instansi tidak boleh kosong' : null,
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama instansi tidak boleh kosong' : null,
                         ),
                         const SizedBox(height: 20),
                         Row(
@@ -1689,44 +1734,46 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                             ),
                             const SizedBox(width: 10),
                             ElevatedButton.icon(
-                                onPressed: () async {
-                                  if (formKey.currentState!.validate()) {
-                                    final newAgency = Agency(
-                                      id: 'agency-${DateTime.now().millisecondsSinceEpoch}',
-                                      name: nameController.text.trim(),
-                                      barcode: 'INS-${nameController.text.trim().toUpperCase().replaceAll(' ', '-')}',
-                                      rooms: [],
-                                    );
-                                    if (isSupabaseConfigured) {
-                                      try {
-                                        await Supabase.instance.client.from('agencies').insert({
-                                          'id': newAgency.id,
-                                          'name': newAgency.name,
-                                          'barcode': newAgency.barcode,
-                                        });
-                                      } catch (e) {
-                                        debugPrint('Supabase Agency Insert Error: $e');
-                                        if (context.mounted) {
-                                          ScaffoldMessenger.of(context).showSnackBar(
-                                            SnackBar(content: Text('Gagal simpan ke database: $e'), backgroundColor: const Color(0xFF1A2F5A), duration: const Duration(seconds: 6)),
-                                          );
-                                        }
+                              onPressed: () async {
+                                if (formKey.currentState!.validate()) {
+                                  final newName = nameController.text.trim();
+                                  final newAgency = Agency(
+                                    id: 'agency-${DateTime.now().millisecondsSinceEpoch}',
+                                    name: newName,
+                                    barcode: 'INS-${newName.toUpperCase().replaceAll(' ', '-')}',
+                                    rooms: [],
+                                  );
+                                  if (isSupabaseConfigured) {
+                                    try {
+                                      await Supabase.instance.client.from('agencies').upsert({
+                                        'id': newAgency.id,
+                                        'name': newAgency.name,
+                                        'barcode': newAgency.barcode,
+                                      });
+                                      debugPrint('Supabase: Agency baru berhasil disimpan!');
+                                    } catch (e) {
+                                      debugPrint('Supabase Agency Insert Error: $e');
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(content: Text('Gagal simpan ke database: $e'), backgroundColor: const Color(0xFF1A2F5A), duration: const Duration(seconds: 6)),
+                                        );
                                       }
                                     }
-                                    widget.onAgenciesChanged([newAgency, ...agencies]);
-                                    if (context.mounted) Navigator.pop(context);
                                   }
-                                },
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1A2F5A),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                icon: const Icon(Icons.save_outlined, size: 16),
-                                label: const Text('Simpan', style: TextStyle(fontWeight: FontWeight.w700)),
+                                  widget.onAgenciesChanged([newAgency, ...agencies]);
+                                  if (context.mounted) Navigator.pop(context);
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1A2F5A),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                               ),
+                              icon: const Icon(Icons.save_outlined, size: 16),
+                              label: const Text('Simpan', style: TextStyle(fontWeight: FontWeight.w700)),
+                            ),
                           ],
                         ),
                       ],
@@ -1745,11 +1792,6 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
   void _showEditAgencyDialog(Agency agency) {
     final nameController = TextEditingController(text: agency.name);
     final formKey = GlobalKey<FormState>();
-    bool _hasChanges = false;
-
-    nameController.addListener(() {
-      _hasChanges = nameController.text.trim() != agency.name;
-    });
 
     InputDecoration _navyInput(String label, String hint, IconData icon) {
       return InputDecoration(
@@ -1769,106 +1811,110 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
     showDialog(
       context: context,
       builder: (context) {
-        return StatefulBuilder(builder: (context, dialogSetState) {
-          nameController.addListener(() {
-            dialogSetState(() {
-              _hasChanges = nameController.text.trim() != agency.name;
-            });
-          });
-          return Dialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-            child: Container(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(20),
-                    decoration: const BoxDecoration(
-                      gradient: LinearGradient(colors: [Color(0xFF1A2F5A), Color(0xFF1E3A6E)]),
-                      borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
-                    ),
-                    child: const Row(
+        return Dialog(
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+          child: Container(
+            constraints: const BoxConstraints(maxWidth: 420),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.all(20),
+                  decoration: const BoxDecoration(
+                    gradient: LinearGradient(colors: [Color(0xFF1A2F5A), Color(0xFF1E3A6E)]),
+                    borderRadius: BorderRadius.only(topLeft: Radius.circular(20), topRight: Radius.circular(20)),
+                  ),
+                  child: const Row(
+                    children: [
+                      Icon(Icons.edit_outlined, color: Color(0xFFE8C155), size: 22),
+                      SizedBox(width: 10),
+                      Text('Edit Data Instansi',
+                          style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                    ],
+                  ),
+                ),
+                Padding(
+                  padding: const EdgeInsets.all(20),
+                  child: Form(
+                    key: formKey,
+                    child: Column(
+                      mainAxisSize: MainAxisSize.min,
                       children: [
-                        Icon(Icons.edit_outlined, color: Color(0xFFE8C155), size: 22),
-                        SizedBox(width: 10),
-                        Text('Edit Data Instansi',
-                            style: TextStyle(fontSize: 16, fontWeight: FontWeight.w800, color: Colors.white)),
+                        TextFormField(
+                          controller: nameController,
+                          decoration: _navyInput('Nama Instansi', 'Misal: DP3A', Icons.domain_rounded),
+                          validator: (v) => (v == null || v.trim().isEmpty) ? 'Nama instansi tidak boleh kosong' : null,
+                        ),
+                        const SizedBox(height: 20),
+                        Row(
+                          mainAxisAlignment: MainAxisAlignment.end,
+                          children: [
+                            OutlinedButton(
+                              onPressed: () => Navigator.pop(context),
+                              style: OutlinedButton.styleFrom(
+                                side: const BorderSide(color: Color(0xFFE53935)),
+                                foregroundColor: const Color(0xFFE53935),
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
+                            ),
+                            const SizedBox(width: 10),
+                            ElevatedButton.icon(
+                              onPressed: () async {
+                                if (formKey.currentState!.validate()) {
+                                  final newName = nameController.text.trim();
+                                  final newBarcode = 'INS-${newName.toUpperCase().replaceAll(' ', '-')}';
+                                  if (isSupabaseConfigured) {
+                                    try {
+                                      await Supabase.instance.client.from('agencies').upsert({
+                                        'id': agency.id,
+                                        'name': newName,
+                                        'barcode': newBarcode,
+                                      });
+                                      debugPrint('Supabase: Agency berhasil diperbarui!');
+                                    } catch (e) {
+                                      debugPrint('Supabase Agency Update Error: $e');
+                                      if (context.mounted) {
+                                        ScaffoldMessenger.of(context).showSnackBar(
+                                          SnackBar(
+                                            content: Text('Gagal update ke database: $e'),
+                                            backgroundColor: const Color(0xFF1A2F5A),
+                                            duration: const Duration(seconds: 6),
+                                          ),
+                                        );
+                                      }
+                                    }
+                                  }
+                                  final updated = agencies.map((a) {
+                                    if (a.id == agency.id) return a.copyWith(name: newName, barcode: newBarcode);
+                                    return a;
+                                  }).toList();
+                                  widget.onAgenciesChanged(updated);
+                                  if (context.mounted) Navigator.pop(context);
+                                }
+                              },
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF1A2F5A),
+                                foregroundColor: Colors.white,
+                                elevation: 0,
+                                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+                              ),
+                              icon: const Icon(Icons.save_outlined, size: 16),
+                              label: const Text('Simpan Perubahan', style: TextStyle(fontWeight: FontWeight.w700)),
+                            ),
+                          ],
+                        ),
                       ],
                     ),
                   ),
-                  Padding(
-                    padding: const EdgeInsets.all(20),
-                    child: Form(
-                      key: formKey,
-                      child: Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          TextFormField(
-                            controller: nameController,
-                            decoration: _navyInput('Nama Instansi', 'Misal: DP3A', Icons.domain_rounded),
-                            validator: (v) => (v == null || v.isEmpty) ? 'Nama instansi tidak boleh kosong' : null,
-                          ),
-                          const SizedBox(height: 20),
-                          Row(
-                            mainAxisAlignment: MainAxisAlignment.end,
-                            children: [
-                              OutlinedButton(
-                                onPressed: () => Navigator.pop(context),
-                                style: OutlinedButton.styleFrom(
-                                  side: const BorderSide(color: Color(0xFFE53935)),
-                                  foregroundColor: const Color(0xFFE53935),
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
-                              ),
-                              const SizedBox(width: 10),
-                              ElevatedButton.icon(
-                                onPressed: _hasChanges ? () async {
-                                  if (formKey.currentState!.validate()) {
-                                    final newName = nameController.text.trim();
-                                    final newBarcode = 'INS-${newName.toUpperCase().replaceAll(' ', '-')}';
-                                    if (isSupabaseConfigured) {
-                                      try {
-                                        await Supabase.instance.client.from('agencies').update({
-                                          'name': newName,
-                                          'barcode': newBarcode,
-                                        }).eq('id', agency.id);
-                                      } catch (e) {
-                                        debugPrint('Supabase Agency Update Error: $e');
-                                      }
-                                    }
-                                    final updated = agencies.map((a) {
-                                      if (a.id == agency.id) return a.copyWith(name: newName, barcode: newBarcode);
-                                      return a;
-                                    }).toList();
-                                    widget.onAgenciesChanged(updated);
-                                    if (context.mounted) Navigator.pop(context);
-                                  }
-                                } : null,
-                                style: ElevatedButton.styleFrom(
-                                  backgroundColor: const Color(0xFF1A2F5A),
-                                  foregroundColor: Colors.white,
-                                  elevation: 0,
-                                  padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
-                                  shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                ),
-                                icon: const Icon(Icons.save_outlined, size: 16),
-                                label: const Text('Simpan Perubahan', style: TextStyle(fontWeight: FontWeight.w700)),
-                              ),
-                            ],
-                          ),
-                        ],
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
-          );
-        });
+          ),
+        );
       },
     );
   }
