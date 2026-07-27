@@ -5712,7 +5712,10 @@ class _PublicAgencyScreenState extends State<PublicAgencyScreen> {
                                               ),
                                             ),
                                             const SizedBox(height: 4),
-                                            Row(
+                                            Wrap(
+                                              spacing: 8,
+                                              runSpacing: 4,
+                                              crossAxisAlignment: WrapCrossAlignment.center,
                                               children: [
                                                 Text(
                                                   'Tahun: ${room.year}',
@@ -5720,10 +5723,8 @@ class _PublicAgencyScreenState extends State<PublicAgencyScreen> {
                                                       fontSize: 12,
                                                       color: Color(0xFF4A5568)),
                                                 ),
-                                                const SizedBox(width: 12),
                                                 _InfoChip(
-                                                  icon: Icons
-                                                      .inventory_2_outlined,
+                                                  icon: Icons.inventory_2_outlined,
                                                   label: '$itemCount Aset',
                                                   color: const Color(0xFF2D7D46),
                                                 ),
@@ -5732,15 +5733,17 @@ class _PublicAgencyScreenState extends State<PublicAgencyScreen> {
                                           ],
                                         ),
                                       ),
+                                      const SizedBox(width: 8),
                                       // Read-only "Lihat Aset" button
-                                      ElevatedButton.icon(
+                                      ElevatedButton(
                                         onPressed: () => widget.onSelectRoom(room),
-                                        icon: const Icon(Icons.visibility_outlined,
-                                            size: 16),
-                                        label: const Text('Lihat Aset',
-                                            style: TextStyle(
-                                                fontWeight: FontWeight.bold,
-                                                fontSize: 13)),
+                                        child: const Text(
+                                          'Lihat Aset',
+                                          style: TextStyle(
+                                            fontWeight: FontWeight.bold,
+                                            fontSize: 13,
+                                          ),
+                                        ),
                                         style: ElevatedButton.styleFrom(
                                           backgroundColor:
                                               const Color(0xFF1A2F5A),
@@ -6330,7 +6333,7 @@ class PublicItemListScreen extends StatelessWidget {
                       borderRadius: BorderRadius.circular(12),
                     ),
                     child: Text(
-                      '${matchedItems.length} Duplikat',
+                      '${matchedItems.length} Aset',
                       style: const TextStyle(
                         fontSize: 12,
                         fontWeight: FontWeight.bold,
@@ -6446,7 +6449,7 @@ class PublicItemListScreen extends StatelessWidget {
                                          if (item.noRegister.isNotEmpty) ...[
                                            Container(
                                              padding: const EdgeInsets.symmetric(
-                                                 horizontal: 8, vertical: 2),
+                                                 horizontal: 12, vertical: 8),
                                              decoration: BoxDecoration(
                                                color: const Color(0xFF1A2F5A).withOpacity(0.08),
                                                borderRadius: BorderRadius.circular(6),
