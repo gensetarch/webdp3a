@@ -2183,7 +2183,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
         title: const Text(
-          'Dashboard',
+          'GenSeT Dashboard Admin',
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
@@ -3143,18 +3143,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
           widget.agencyName ?? 'Dashboard Admin',
           style: const TextStyle(fontWeight: FontWeight.bold),
         ),
-        actions: [
-          IconButton(
-            onPressed: onScanPressed,
-            icon: const Icon(Icons.qr_code_scanner),
-            tooltip: 'Pindai Barcode Aset',
-          ),
-          IconButton(
-            onPressed: _showLogoutConfirmation,
-            icon: const Icon(Icons.logout),
-            tooltip: 'Logout Admin',
-          ),
-        ],
       ),
       body: Stack(
         children: [
