@@ -268,7 +268,10 @@ class _MainAppControllerState extends State<MainAppController> {
                     },
                   ),
                 ),
-              );
+              ).then((_) {
+                removeFromStorage('admin_current_agency_id');
+                removeFromSession('admin_current_agency_id');
+              });
 
               if (savedRoomId != null && savedRoomId.isNotEmpty) {
                 final roomMatches = targetAgency.rooms.where((r) => r.id == savedRoomId).toList();
@@ -2466,7 +2469,10 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                                         onHostOverrideChanged: widget.onHostOverrideChanged,
                                                       ),
                                                     ),
-                                                  );
+                                                  ).then((_) {
+                                                    removeFromStorage('admin_current_agency_id');
+                                                    removeFromSession('admin_current_agency_id');
+                                                  });
                                                 },
                                                 style: ElevatedButton.styleFrom(
                                                   backgroundColor: const Color(0xFF1A2F5A),
