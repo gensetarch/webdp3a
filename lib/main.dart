@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -9,6 +10,29 @@ import 'package:image_picker/image_picker.dart';
 import 'printer_helper.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 import 'storage_helper.dart';
+
+void saveCachedAgencies(List<Agency> agencies) {
+  try {
+    final rawJson = jsonEncode(agencies.map((a) => a.toMap()).toList());
+    saveToStorage('cached_agencies_json', rawJson);
+  } catch (e) {
+    debugPrint('Error caching agencies: $e');
+  }
+}
+
+List<Agency>? getCachedAgencies() {
+  try {
+    final rawStr = getFromStorage('cached_agencies_json');
+    if (rawStr != null && rawStr.isNotEmpty) {
+      final List decoded = jsonDecode(rawStr);
+      return decoded.map((map) => Agency.fromMap(map as Map<String, dynamic>)).toList();
+    }
+  } catch (e) {
+    debugPrint('Error loading cached agencies: $e');
+  }
+  return null;
+}
+
 
 
 // URL GitHub Pages resmi untuk deploy
@@ -152,25 +176,21 @@ class _MainAppControllerState extends State<MainAppController> {
   }
 
   Future<void> _initData() async {
-    final bool isReload = isPageReload();
-
-    // Jika BUKAN reload (misal user klik link webnya / baru buka URL),
-    // hapus status session login admin agar selalu kembali ke Halaman Login.
-    if (!isReload) {
-      removeFromStorage('admin_logged_in');
-      removeFromStorage('admin_current_room_id');
-      removeFromSession('admin_logged_in');
-      removeFromSession('admin_current_room_id');
-    }
-
-    final loggedIn = isReload && (
-      getFromSession('admin_logged_in') == 'true' ||
-      getFromStorage('admin_logged_in') == 'true'
-    );
+    final loggedIn = getFromSession('admin_logged_in') == 'true' ||
+        getFromStorage('admin_logged_in') == 'true';
 
     setState(() {
       _isAdminLoggedIn = loggedIn;
     });
+
+    // Muat cache lokal terlebih dahulu agar navigasi restore tidak menunggu Supabase
+    final preloaded = getCachedAgencies();
+    if (preloaded != null && preloaded.isNotEmpty) {
+      setState(() {
+        _agencies = preloaded;
+        _rooms = preloaded.expand((a) => a.rooms).toList();
+      });
+    }
 
     if (isSupabaseConfigured) {
       await _fetchDataFromSupabase();
@@ -198,18 +218,95 @@ class _MainAppControllerState extends State<MainAppController> {
       });
     }
 
-    if (loggedIn && isReload) {
+    if (loggedIn) {
+      final savedAgencyId = getFromSession('admin_current_agency_id') ?? getFromStorage('admin_current_agency_id');
       final savedRoomId = getFromSession('admin_current_room_id') ?? getFromStorage('admin_current_room_id');
-      if (savedRoomId != null) {
-        final roomList = _rooms.where((r) => r.id == savedRoomId).toList();
-        if (roomList.isNotEmpty) {
+
+      if (savedAgencyId != null && savedAgencyId.isNotEmpty) {
+        final agencyMatches = _agencies.where((a) => a.id == savedAgencyId).toList();
+        if (agencyMatches.isNotEmpty) {
+          final targetAgency = agencyMatches.first;
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            if (mounted) {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => DashboardScreen(
+                    rooms: targetAgency.rooms,
+                    agencyId: targetAgency.id,
+                    onLogout: () {
+                      removeFromStorage('admin_logged_in');
+                      removeFromStorage('admin_current_agency_id');
+                      removeFromStorage('admin_current_room_id');
+                      removeFromSession('admin_logged_in');
+                      removeFromSession('admin_current_agency_id');
+                      removeFromSession('admin_current_room_id');
+                      setState(() {
+                        _isAdminLoggedIn = false;
+                      });
+                    },
+                    onRoomsChanged: (updatedRooms) {
+                      final updatedAgency = targetAgency.copyWith(rooms: updatedRooms);
+                      final updatedAll = _agencies.map((a) => a.id == targetAgency.id ? updatedAgency : a).toList();
+                      setState(() {
+                        _agencies = updatedAll;
+                        _rooms = updatedAll.expand((a) => a.rooms).toList();
+                      });
+                      saveCachedAgencies(updatedAll);
+                    },
+                    onScanPressed: () async {
+                      final result = await Navigator.push<String>(
+                        context,
+                        MaterialPageRoute(builder: (_) => const ScanScreen()),
+                      );
+                      if (result != null) {
+                        _handleScannedData(result);
+                      }
+                    },
+                    onHostOverrideChanged: () {
+                      setState(() {});
+                    },
+                  ),
+                ),
+              );
+
+              if (savedRoomId != null && savedRoomId.isNotEmpty) {
+                final roomMatches = targetAgency.rooms.where((r) => r.id == savedRoomId).toList();
+                final fallbackRooms = _rooms.where((r) => r.id == savedRoomId).toList();
+                final targetRoom = roomMatches.isNotEmpty
+                    ? roomMatches.first
+                    : (fallbackRooms.isNotEmpty ? fallbackRooms.first : null);
+
+                if (targetRoom != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => RoomDetailsScreen(
+                        room: targetRoom,
+                        allRooms: _rooms,
+                        onRoomsChanged: (updatedRooms) {
+                          setState(() {
+                            _rooms = updatedRooms;
+                          });
+                        },
+                      ),
+                    ),
+                  );
+                }
+              }
+            }
+          });
+        }
+      } else if (savedRoomId != null && savedRoomId.isNotEmpty) {
+        final roomMatches = _rooms.where((r) => r.id == savedRoomId).toList();
+        if (roomMatches.isNotEmpty) {
           WidgetsBinding.instance.addPostFrameCallback((_) {
             if (mounted) {
               Navigator.push(
                 context,
                 MaterialPageRoute(
                   builder: (context) => RoomDetailsScreen(
-                    room: roomList.first,
+                    room: roomMatches.first,
                     allRooms: _rooms,
                     onRoomsChanged: (updatedRooms) {
                       setState(() {
@@ -218,10 +315,7 @@ class _MainAppControllerState extends State<MainAppController> {
                     },
                   ),
                 ),
-              ).then((_) {
-                removeFromStorage('admin_current_room_id');
-                removeFromSession('admin_current_room_id');
-              });
+              );
             }
           });
         }
@@ -253,8 +347,6 @@ class _MainAppControllerState extends State<MainAppController> {
           final itemId = itemData['id'] ?? '';
           final kodeBarang = itemData['kode_barang'] ?? '';
           final rawBarcode = itemData['barcode'] ?? '';
-          // Normalisasi: jika barcode lama = kode_barang (data lama),
-          // pakai item id sebagai barcode agar scan selalu unik
           final effectiveBarcode = (rawBarcode.isEmpty || rawBarcode == kodeBarang)
               ? itemId
               : rawBarcode;
@@ -315,6 +407,15 @@ class _MainAppControllerState extends State<MainAppController> {
         debugPrint('Error fetching agencies from Supabase: $e');
       }
 
+      // Fallback 1: Use locally cached agencies if Supabase agencies query was empty or failed
+      if (loadedAgencies.isEmpty) {
+        final cached = getCachedAgencies();
+        if (cached != null && cached.isNotEmpty) {
+          loadedAgencies = cached;
+        }
+      }
+
+      // Fallback 2: Default agency
       if (loadedAgencies.isEmpty) {
         final defaultAgency = Agency(
           id: 'agency-default',
@@ -334,13 +435,23 @@ class _MainAppControllerState extends State<MainAppController> {
         }
       }
 
+      saveCachedAgencies(loadedAgencies);
+
       setState(() {
         _rooms = loadedRooms;
         _agencies = loadedAgencies;
       });
     } catch (e) {
       debugPrint('Error fetching data from Supabase: $e');
-      _loadSampleData();
+      final cached = getCachedAgencies();
+      if (cached != null && cached.isNotEmpty) {
+        setState(() {
+          _agencies = cached;
+          _rooms = cached.expand((a) => a.rooms).toList();
+        });
+      } else {
+        _loadSampleData();
+      }
     } finally {
       setState(() {
         _isLoading = false;
@@ -835,6 +946,7 @@ class _MainAppControllerState extends State<MainAppController> {
           _agencies = updatedAgencies;
           _rooms = updatedAgencies.expand((a) => a.rooms).toList();
         });
+        saveCachedAgencies(updatedAgencies);
       },
       onScanPressed: () async {
         final result = await Navigator.push<String>(
@@ -1555,7 +1667,19 @@ class AgencyListScreen extends StatefulWidget {
 }
 
 class _AgencyListScreenState extends State<AgencyListScreen> {
-  List<Agency> get agencies => widget.agencies;
+  late List<Agency> _localAgencies;
+
+  // Expose local agencies so all build methods use local state
+  List<Agency> get agencies => _localAgencies;
+
+  void _updateAgencies(List<Agency> updated) {
+    setState(() {
+      _localAgencies = updated;
+    });
+    widget.onAgenciesChanged(updated);
+  }
+
+  ValueChanged<List<Agency>> get onAgenciesChangedLocal => _updateAgencies;
 
   final TextEditingController _searchController = TextEditingController();
   String _searchQuery = '';
@@ -1563,9 +1687,20 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
   @override
   void initState() {
     super.initState();
+    _localAgencies = List<Agency>.from(widget.agencies);
     _searchController.addListener(() {
       setState(() => _searchQuery = _searchController.text.trim().toLowerCase());
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant AgencyListScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.agencies != widget.agencies) {
+      setState(() {
+        _localAgencies = List<Agency>.from(widget.agencies);
+      });
+    }
   }
 
   @override
@@ -1760,7 +1895,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                       }
                                     }
                                   }
-                                  widget.onAgenciesChanged([newAgency, ...agencies]);
+                                  _updateAgencies([newAgency, ...agencies]);
                                   if (context.mounted) Navigator.pop(context);
                                 }
                               },
@@ -1891,7 +2026,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                     if (a.id == agency.id) return a.copyWith(name: newName, barcode: newBarcode);
                                     return a;
                                   }).toList();
-                                  widget.onAgenciesChanged(updated);
+                                  _updateAgencies(updated);
                                   if (context.mounted) Navigator.pop(context);
                                 }
                               },
@@ -1929,7 +2064,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
       }
     }
     final updated = agencies.where((a) => a.id != agency.id).toList();
-    widget.onAgenciesChanged(updated);
+    _updateAgencies(updated);
   }
 
   // ── QR Dialog ─────────────────────────────────────────────────────────────
@@ -2312,16 +2447,20 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                               const Spacer(),
                                               ElevatedButton(
                                                 onPressed: () {
+                                                  saveToStorage('admin_current_agency_id', agency.id);
+                                                  saveToSession('admin_current_agency_id', agency.id);
                                                   Navigator.push(
                                                     context,
                                                     MaterialPageRoute(
                                                       builder: (context) => DashboardScreen(
                                                         rooms: agency.rooms,
+                                                        agencyId: agency.id,
                                                         onLogout: widget.onLogout,
                                                         onRoomsChanged: (updatedRooms) {
                                                           final updatedAgency = agency.copyWith(rooms: updatedRooms);
                                                           final updatedAll = agencies.map((a) => a.id == agency.id ? updatedAgency : a).toList();
                                                           widget.onAgenciesChanged(updatedAll);
+                                                          saveCachedAgencies(updatedAll);
                                                         },
                                                         onScanPressed: widget.onScanPressed,
                                                         onHostOverrideChanged: widget.onHostOverrideChanged,
@@ -2434,6 +2573,7 @@ class _InfoChip extends StatelessWidget {
 // ----------------------------------------------------
 class DashboardScreen extends StatefulWidget {
   final List<Room> rooms;
+  final String? agencyId;
   final VoidCallback onLogout;
   final ValueChanged<List<Room>> onRoomsChanged;
   final VoidCallback onScanPressed;
@@ -2442,6 +2582,7 @@ class DashboardScreen extends StatefulWidget {
   const DashboardScreen({
     Key? key,
     required this.rooms,
+    this.agencyId,
     required this.onLogout,
     required this.onRoomsChanged,
     required this.onScanPressed,
@@ -2453,21 +2594,44 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  List<Room> get rooms => widget.rooms;
+  late List<Room> _localRooms;
   VoidCallback get onLogout => widget.onLogout;
-  ValueChanged<List<Room>> get onRoomsChanged => widget.onRoomsChanged;
   VoidCallback get onScanPressed => widget.onScanPressed;
   VoidCallback get onHostOverrideChanged => widget.onHostOverrideChanged;
+
+  // Expose local rooms as getter so all build methods use local state
+  List<Room> get rooms => _localRooms;
 
   final TextEditingController _roomSearchController = TextEditingController();
   String _roomSearchQuery = '';
 
+  void _updateRooms(List<Room> updatedRooms) {
+    setState(() {
+      _localRooms = updatedRooms;
+    });
+    widget.onRoomsChanged(updatedRooms);
+  }
+
+  ValueChanged<List<Room>> get onRoomsChanged => _updateRooms;
+
   @override
   void initState() {
     super.initState();
+    _localRooms = List<Room>.from(widget.rooms);
     _roomSearchController.addListener(() {
       setState(() => _roomSearchQuery = _roomSearchController.text.trim().toLowerCase());
     });
+  }
+
+  @override
+  void didUpdateWidget(covariant DashboardScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Sync from parent only if parent list changed (e.g., after Supabase fetch)
+    if (oldWidget.rooms != widget.rooms) {
+      setState(() {
+        _localRooms = List<Room>.from(widget.rooms);
+      });
+    }
   }
 
   @override
@@ -2711,12 +2875,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
                                     if (isSupabaseConfigured) {
                                       try {
-                                        await Supabase.instance.client.from('rooms').insert({
+                                        final insertData = {
                                           'id': newRoom.id,
                                           'name': newRoom.name,
                                           'year': newRoom.year,
                                           'barcode': newRoom.barcode,
-                                        });
+                                        };
+                                        // Sertakan agency_id jika ada
+                                        if (widget.agencyId != null && widget.agencyId!.isNotEmpty) {
+                                          insertData['agency_id'] = widget.agencyId!;
+                                        }
+                                        await Supabase.instance.client.from('rooms').insert(insertData);
                                         debugPrint('Supabase: Room berhasil disimpan!');
                                       } catch (e) {
                                         debugPrint('Supabase Room Insert Error: $e');
