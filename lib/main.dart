@@ -2182,20 +2182,9 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
         ),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFE8C155).withOpacity(0.22),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.domain_rounded, color: Color(0xFFE8C155), size: 18),
-            ),
-            const SizedBox(width: 10),
-            const Text('Panel Admin',
-                style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16)),
-          ],
+        title: const Text(
+          'Dashboard',
+          style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
@@ -3150,23 +3139,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(6),
-              decoration: BoxDecoration(
-                color: const Color(0xFFCFA836).withOpacity(0.25),
-                borderRadius: BorderRadius.circular(8),
-              ),
-              child: const Icon(Icons.inventory_2_outlined,
-                  color: Color(0xFFE8C155), size: 18),
-            ),
-            const SizedBox(width: 10),
-            Text(
-              widget.agencyName ?? 'Dashboard Admin',
-              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
-            ),
-          ],
+        title: Text(
+          widget.agencyName ?? 'Dashboard Admin',
+          style: const TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
           IconButton(
