@@ -234,6 +234,7 @@ class _MainAppControllerState extends State<MainAppController> {
                   builder: (context) => DashboardScreen(
                     rooms: targetAgency.rooms,
                     agencyId: targetAgency.id,
+                    agencyName: targetAgency.name,
                     onLogout: () {
                       removeFromStorage('admin_logged_in');
                       removeFromStorage('admin_current_agency_id');
@@ -2458,6 +2459,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                                       builder: (context) => DashboardScreen(
                                                         rooms: agency.rooms,
                                                         agencyId: agency.id,
+                                                        agencyName: agency.name,
                                                         onLogout: widget.onLogout,
                                                         onRoomsChanged: (updatedRooms) {
                                                           final updatedAgency = agency.copyWith(rooms: updatedRooms);
@@ -2580,6 +2582,7 @@ class _InfoChip extends StatelessWidget {
 class DashboardScreen extends StatefulWidget {
   final List<Room> rooms;
   final String? agencyId;
+  final String? agencyName;
   final VoidCallback onLogout;
   final ValueChanged<List<Room>> onRoomsChanged;
   final VoidCallback onScanPressed;
@@ -2589,6 +2592,7 @@ class DashboardScreen extends StatefulWidget {
     Key? key,
     required this.rooms,
     this.agencyId,
+    this.agencyName,
     required this.onLogout,
     required this.onRoomsChanged,
     required this.onScanPressed,
@@ -3158,9 +3162,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   color: Color(0xFFE8C155), size: 18),
             ),
             const SizedBox(width: 10),
-            const Text(
-              'GENSET Admin Dashboard',
-              style: TextStyle(fontWeight: FontWeight.bold),
+            Text(
+              widget.agencyName ?? 'Dashboard Admin',
+              style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
             ),
           ],
         ),
