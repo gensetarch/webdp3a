@@ -5487,7 +5487,10 @@ class _PublicAgencyScreenState extends State<PublicAgencyScreen> {
           onPressed: widget.onBackToLogin,
           tooltip: 'Kembali',
         ),
-        title: Text('GENSET Instansi: ${agency.name}'),
+        title: Text(
+          agency.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: Stack(
         children: [
@@ -5847,7 +5850,10 @@ class PublicRoomScreen extends StatelessWidget {
           onPressed: onBackToLogin,
           tooltip: 'Kembali',
         ),
-        title: Text('GENSET Ruangan: ${room.name}'),
+        title: Text(
+          room.name,
+          style: const TextStyle(fontWeight: FontWeight.bold),
+        ),
       ),
       body: Center(
         child: Container(
