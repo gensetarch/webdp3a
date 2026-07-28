@@ -2226,9 +2226,15 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
   void _showAdminSettingsDialog() async {
     final emailCtrl = TextEditingController();
     final passCtrl = TextEditingController();
+    final superadminOtpCtrl = TextEditingController();
+    const superadminEmail = 'bayubabayo780@gmail.com';
+    String existingEmail = superadminEmail;
+    int step = 0; // 0=Form Edit, 1=Verifikasi OTP Superadmin
     bool isSaving = false;
     String? dialogError;
     bool obscurePass = true;
+    String? pendingNewEmail;
+    String? pendingNewPass;
 
     // Load existing settings from Supabase
     if (isSupabaseConfigured) {
@@ -2237,8 +2243,9 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
             .from('admin_settings')
             .select('key, value');
         for (var row in res) {
-          if (row['key'] == 'admin_email') {
-            emailCtrl.text = row['value'].toString();
+          if (row['key'] == 'admin_email' && row['value'] != null) {
+            existingEmail = row['value'].toString();
+            emailCtrl.text = existingEmail;
           }
         }
       } catch (_) {}
@@ -2252,6 +2259,425 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setDlg) {
+            // ── Step 0: Form Edit Settings ───────────────────────────
+            Widget buildStep0() {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  const Text(
+                    'Kelola email pemulihan untuk menerima kode OTP lupa password dan kata sandi admin instansi.',
+                    style: TextStyle(fontSize: 12.5, color: Color(0xFF4A5568)),
+                  ),
+                  const SizedBox(height: 16),
+                  Container(height: 1, color: const Color(0xFFEEF2F8)),
+                  const SizedBox(height: 16),
+
+                  // Email Pemulihan
+                  const Text(
+                    'Email Pemulihan (Penerima OTP)',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A2F5A)),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    'Perubahan email baru membutuhkan izin OTP dari Superadmin ($superadminEmail).',
+                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    decoration: InputDecoration(
+                      hintText: 'admin.dp3a@sulselprov.go.id',
+                      prefixIcon: const Icon(Icons.mark_email_read_outlined,
+                          size: 20),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF1A2F5A), width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+
+                  // Password Admin Baru (Opsional)
+                  const Text(
+                    'Password Admin Baru (Opsional)',
+                    style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF1A2F5A)),
+                  ),
+                  const SizedBox(height: 6),
+                  TextField(
+                    controller: passCtrl,
+                    obscureText: obscurePass,
+                    decoration: InputDecoration(
+                      hintText: 'Kosongkan jika tidak ingin mengubah',
+                      prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                      suffixIcon: IconButton(
+                        icon: Icon(
+                          obscurePass
+                              ? Icons.visibility_outlined
+                              : Icons.visibility_off_outlined,
+                          size: 20,
+                        ),
+                        onPressed: () => setDlg(() => obscurePass = !obscurePass),
+                      ),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF1A2F5A), width: 1.5),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 12, vertical: 12),
+                    ),
+                  ),
+
+                  if (dialogError != null) ...[
+                    const SizedBox(height: 12),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF5F5),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFEB2B2)),
+                      ),
+                      child: Text(
+                        dialogError!,
+                        style: const TextStyle(
+                            color: Color(0xFFE53E3E), fontSize: 12),
+                      ),
+                    ),
+                  ],
+
+                  const SizedBox(height: 24),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => Navigator.pop(ctx),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('Batal'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  final email = emailCtrl.text.trim();
+                                  final pass = passCtrl.text;
+
+                                  if (email.isNotEmpty && !email.contains('@')) {
+                                    setDlg(() =>
+                                        dialogError = 'Format email tidak valid.');
+                                    return;
+                                  }
+                                  if (pass.isNotEmpty && pass.length < 6) {
+                                    setDlg(() => dialogError =
+                                        'Password minimal 6 karakter.');
+                                    return;
+                                  }
+
+                                  setDlg(() {
+                                    isSaving = true;
+                                    dialogError = null;
+                                  });
+
+                                  // Jika email berubah → Butuh persetujuan Superadmin via OTP
+                                  final isEmailChanged =
+                                      email.isNotEmpty && email != existingEmail;
+
+                                  if (isEmailChanged) {
+                                    try {
+                                      // Kirim OTP persetujuan ke Superadmin
+                                      await Supabase.instance.client.auth
+                                          .signInWithOtp(
+                                        email: superadminEmail,
+                                        shouldCreateUser: true,
+                                      );
+                                      pendingNewEmail = email;
+                                      pendingNewPass = pass;
+                                      setDlg(() {
+                                        isSaving = false;
+                                        step = 1;
+                                      });
+                                    } catch (e) {
+                                      setDlg(() {
+                                        isSaving = false;
+                                        dialogError =
+                                            'Gagal mengirim OTP izin ke Superadmin ($superadminEmail). Periksa koneksi.';
+                                      });
+                                    }
+                                  } else {
+                                    // Hanya ganti password (jika ada) tanpa ganti email
+                                    try {
+                                      if (isSupabaseConfigured &&
+                                          pass.isNotEmpty) {
+                                        await Supabase.instance.client
+                                            .from('admin_settings')
+                                            .upsert({
+                                          'key': 'admin_password',
+                                          'value': pass
+                                        });
+                                      }
+                                      if (ctx.mounted) Navigator.pop(ctx);
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                '✅ Kata sandi admin berhasil diperbarui!'),
+                                            backgroundColor: Color(0xFF1A7A4A),
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      setDlg(() {
+                                        isSaving = false;
+                                        dialogError =
+                                            'Gagal menyimpan kata sandi: $e';
+                                      });
+                                    }
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1A2F5A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Simpan'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }
+
+            // ── Step 1: OTP Verifikasi Izin Superadmin ───────────────
+            Widget buildStep1() {
+              return Column(
+                mainAxisSize: MainAxisSize.min,
+                crossAxisAlignment: CrossAxisAlignment.stretch,
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFFFBEB),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: const Color(0xFFFCD34D)),
+                    ),
+                    child: Row(
+                      children: [
+                        const Icon(Icons.shield_outlined,
+                            color: Color(0xFFB45309), size: 22),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              const Text(
+                                'Izin Superadmin Diperlukan',
+                                style: TextStyle(
+                                    fontWeight: FontWeight.bold,
+                                    fontSize: 13,
+                                    color: Color(0xFFB45309)),
+                              ),
+                              const SizedBox(height: 2),
+                              Text(
+                                'Email penerima OTP akan diubah menjadi:\n$pendingNewEmail',
+                                style: const TextStyle(
+                                    fontSize: 11.5, color: Color(0xFF78350F)),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    'Kode OTP persetujuan telah dikirimkan ke email Superadmin:\n$superadminEmail',
+                    style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
+                  ),
+                  const SizedBox(height: 16),
+                  TextField(
+                    controller: superadminOtpCtrl,
+                    keyboardType: TextInputType.number,
+                    maxLength: 8,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                        fontSize: 22,
+                        fontWeight: FontWeight.bold,
+                        letterSpacing: 6),
+                    decoration: InputDecoration(
+                      counterText: '',
+                      hintText: '00000000',
+                      hintStyle: TextStyle(
+                          color: Colors.grey[300],
+                          fontSize: 22,
+                          letterSpacing: 6),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF1A2F5A), width: 1.5),
+                      ),
+                    ),
+                  ),
+                  if (dialogError != null) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFFFF5F5),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(color: const Color(0xFFFEB2B2)),
+                      ),
+                      child: Text(
+                        dialogError!,
+                        style: const TextStyle(
+                            color: Color(0xFFE53E3E), fontSize: 12),
+                      ),
+                    ),
+                  ],
+                  const SizedBox(height: 20),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: OutlinedButton(
+                          onPressed: () => setDlg(() {
+                            step = 0;
+                            dialogError = null;
+                          }),
+                          style: OutlinedButton.styleFrom(
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: const Text('Kembali'),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: ElevatedButton(
+                          onPressed: isSaving
+                              ? null
+                              : () async {
+                                  final otp = superadminOtpCtrl.text.trim();
+                                  if (otp.length < 6 || otp.length > 8) {
+                                    setDlg(() => dialogError =
+                                        'Kode OTP harus 6-8 digit.');
+                                    return;
+                                  }
+
+                                  setDlg(() {
+                                    isSaving = true;
+                                    dialogError = null;
+                                  });
+
+                                  try {
+                                    // Verifikasi OTP dari Superadmin
+                                    await Supabase.instance.client.auth.verifyOTP(
+                                      email: superadminEmail,
+                                      token: otp,
+                                      type: OtpType.email,
+                                    );
+
+                                    // OTP Valid -> Simpan email baru ke Supabase admin_settings
+                                    if (isSupabaseConfigured &&
+                                        pendingNewEmail != null) {
+                                      await Supabase.instance.client
+                                          .from('admin_settings')
+                                          .upsert({
+                                        'key': 'admin_email',
+                                        'value': pendingNewEmail
+                                      });
+
+                                      if (pendingNewPass != null &&
+                                          pendingNewPass!.isNotEmpty) {
+                                        await Supabase.instance.client
+                                            .from('admin_settings')
+                                            .upsert({
+                                          'key': 'admin_password',
+                                          'value': pendingNewPass
+                                        });
+                                      }
+                                    }
+
+                                    if (ctx.mounted) Navigator.pop(ctx);
+                                    if (mounted) {
+                                      ScaffoldMessenger.of(context).showSnackBar(
+                                        SnackBar(
+                                          content: Text(
+                                              '✅ Email pemulihan baru ($pendingNewEmail) berhasil disetujui Superadmin & disimpan!'),
+                                          backgroundColor:
+                                              const Color(0xFF1A7A4A),
+                                          duration: const Duration(seconds: 4),
+                                        ),
+                                      );
+                                    }
+                                  } catch (e) {
+                                    setDlg(() {
+                                      isSaving = false;
+                                      dialogError =
+                                          'Kode OTP Superadmin salah atau kedaluwarsa.';
+                                    });
+                                  }
+                                },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1A2F5A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(vertical: 14),
+                            shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(10)),
+                          ),
+                          child: isSaving
+                              ? const SizedBox(
+                                  width: 18,
+                                  height: 18,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    color: Colors.white,
+                                  ),
+                                )
+                              : const Text('Verifikasi & Setujui'),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              );
+            }
+
             return AlertDialog(
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
@@ -2264,13 +2690,17 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                       color: const Color(0xFF1A2F5A).withOpacity(0.08),
                       borderRadius: BorderRadius.circular(8),
                     ),
-                    child: const Icon(Icons.settings_outlined,
-                        color: Color(0xFF1A2F5A), size: 22),
+                    child: Icon(
+                        step == 0 ? Icons.settings_outlined : Icons.shield_outlined,
+                        color: const Color(0xFF1A2F5A),
+                        size: 22),
                   ),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Pengaturan Admin',
-                    style: TextStyle(
+                  Text(
+                    step == 0
+                        ? 'Pengaturan Admin'
+                        : 'Persetujuan Superadmin',
+                    style: const TextStyle(
                       fontSize: 18,
                       fontWeight: FontWeight.bold,
                       color: Color(0xFF1A2F5A),
@@ -2280,208 +2710,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
               ),
               content: SizedBox(
                 width: 420,
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  children: [
-                    const Text(
-                      'Kelola email pemulihan untuk menerima kode OTP lupa password dan kata sandi admin instansi.',
-                      style: TextStyle(fontSize: 12.5, color: Color(0xFF4A5568)),
-                    ),
-                    const SizedBox(height: 16),
-                    Container(height: 1, color: const Color(0xFFEEF2F8)),
-                    const SizedBox(height: 16),
-
-                    // Email Pemulihan
-                    const Text(
-                      'Email Pemulihan (Penerima OTP)',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A2F5A)),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: emailCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      decoration: InputDecoration(
-                        hintText: 'admin.dp3a@sulselprov.go.id',
-                        prefixIcon: const Icon(Icons.mark_email_read_outlined,
-                            size: 20),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF1A2F5A), width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 12),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-
-                    // Password Admin Baru (Opsional)
-                    const Text(
-                      'Password Admin Baru (Opsional)',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          color: Color(0xFF1A2F5A)),
-                    ),
-                    const SizedBox(height: 6),
-                    TextField(
-                      controller: passCtrl,
-                      obscureText: obscurePass,
-                      decoration: InputDecoration(
-                        hintText: 'Kosongkan jika tidak ingin mengubah',
-                        prefixIcon:
-                            const Icon(Icons.lock_outline, size: 20),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            obscurePass
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            size: 20,
-                          ),
-                          onPressed: () =>
-                              setDlg(() => obscurePass = !obscurePass),
-                        ),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF1A2F5A), width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 12),
-                      ),
-                    ),
-
-                    if (dialogError != null) ...[
-                      const SizedBox(height: 12),
-                      Container(
-                        padding: const EdgeInsets.all(10),
-                        decoration: BoxDecoration(
-                          color: const Color(0xFFFFF5F5),
-                          borderRadius: BorderRadius.circular(8),
-                          border: Border.all(color: const Color(0xFFFEB2B2)),
-                        ),
-                        child: Text(
-                          dialogError!,
-                          style: const TextStyle(
-                              color: Color(0xFFE53E3E), fontSize: 12),
-                        ),
-                      ),
-                    ],
-
-                    const SizedBox(height: 24),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: OutlinedButton(
-                            onPressed: () => Navigator.pop(ctx),
-                            style: OutlinedButton.styleFrom(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                            ),
-                            child: const Text('Batal'),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: ElevatedButton(
-                            onPressed: isSaving
-                                ? null
-                                : () async {
-                                    final email = emailCtrl.text.trim();
-                                    final pass = passCtrl.text;
-                                    if (email.isNotEmpty &&
-                                        !email.contains('@')) {
-                                      setDlg(() => dialogError =
-                                          'Format email tidak valid.');
-                                      return;
-                                    }
-                                    setDlg(() {
-                                      isSaving = true;
-                                      dialogError = null;
-                                    });
-
-                                    try {
-                                      if (isSupabaseConfigured) {
-                                        if (email.isNotEmpty) {
-                                          await Supabase.instance.client
-                                              .from('admin_settings')
-                                              .upsert({
-                                            'key': 'admin_email',
-                                            'value': email
-                                          });
-                                        }
-                                        if (pass.isNotEmpty) {
-                                          if (pass.length < 6) {
-                                            setDlg(() {
-                                              isSaving = false;
-                                              dialogError =
-                                                  'Password minimal 6 karakter.';
-                                            });
-                                            return;
-                                          }
-                                          await Supabase.instance.client
-                                              .from('admin_settings')
-                                              .upsert({
-                                            'key': 'admin_password',
-                                            'value': pass
-                                          });
-                                        }
-                                      }
-
-                                      if (ctx.mounted) Navigator.pop(ctx);
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                '✅ Pengaturan admin berhasil disimpan!'),
-                                            backgroundColor:
-                                                Color(0xFF1A7A4A),
-                                          ),
-                                        );
-                                      }
-                                    } catch (e) {
-                                      setDlg(() {
-                                        isSaving = false;
-                                        dialogError =
-                                            'Gagal menyimpan pengaturan: $e';
-                                      });
-                                    }
-                                  },
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A2F5A),
-                              foregroundColor: Colors.white,
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 14),
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                            ),
-                            child: isSaving
-                                ? const SizedBox(
-                                    width: 18,
-                                    height: 18,
-                                    child: CircularProgressIndicator(
-                                      strokeWidth: 2,
-                                      color: Colors.white,
-                                    ),
-                                  )
-                                : const Text('Simpan'),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
+                child: step == 0 ? buildStep0() : buildStep1(),
               ),
             );
           },
