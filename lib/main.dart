@@ -1212,7 +1212,7 @@ class _LoginScreenState extends State<LoginScreen>
                 TextField(
                   controller: otpCtrl,
                   keyboardType: TextInputType.number,
-                  maxLength: 6,
+                  maxLength: 8,
                   textAlign: TextAlign.center,
                   style: const TextStyle(
                       fontSize: 24,
@@ -1220,7 +1220,7 @@ class _LoginScreenState extends State<LoginScreen>
                       letterSpacing: 8),
                   decoration: InputDecoration(
                     counterText: '',
-                    hintText: '000000',
+                    hintText: '00000000',
                     hintStyle: TextStyle(
                         color: Colors.grey[300],
                         fontSize: 24,
@@ -1260,9 +1260,9 @@ class _LoginScreenState extends State<LoginScreen>
                             ? null
                             : () async {
                                 final otp = otpCtrl.text.trim();
-                                if (otp.length != 6) {
+                                if (otp.length < 6 || otp.length > 8) {
                                   setDlg(() => dialogError =
-                                      'Kode OTP harus 6 digit.');
+                                      'Kode OTP harus 6-8 digit.');
                                   return;
                                 }
                                 setDlg(() {
