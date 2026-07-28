@@ -1184,6 +1184,8 @@ class _LoginScreenState extends State<LoginScreen>
                                       .signInWithOtp(
                                     email: email,
                                     shouldCreateUser: true,
+                                    emailRedirectTo:
+                                        'https://gensetarch.github.io/webdp3a',
                                   );
                                   savedEmail = email;
                                   setDlg(() {
@@ -2410,6 +2412,8 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                           .signInWithOtp(
                                         email: superadminEmail,
                                         shouldCreateUser: true,
+                                        emailRedirectTo:
+                                            'https://gensetarch.github.io/webdp3a',
                                       );
                                       pendingNewEmail = email;
                                       pendingNewPass = pass;
