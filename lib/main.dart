@@ -995,6 +995,7 @@ class _LoginScreenState extends State<LoginScreen>
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
   String? _errorMessage;
+  bool _isLoggingIn = false;
   late AnimationController _animController;
   late Animation<double> _fadeAnim;
   late Animation<Offset> _slideAnim;
@@ -1030,16 +1031,465 @@ class _LoginScreenState extends State<LoginScreen>
     super.dispose();
   }
 
-  void _handleLogin() {
-    if (_formKey.currentState!.validate()) {
-      if (_passwordController.text == 'admin') {
-        widget.onLoginSuccess();
-      } else {
-        setState(() {
-          _errorMessage = 'Password salah! Silakan coba lagi.';
-        });
-      }
+  Future<void> _handleLogin() async {
+    if (!_formKey.currentState!.validate()) return;
+    setState(() {
+      _isLoggingIn = true;
+      _errorMessage = null;
+    });
+    final entered = _passwordController.text.trim();
+    // Cek password default
+    if (entered == 'admin') {
+      widget.onLoginSuccess();
+      return;
     }
+    // Cek custom password yang disimpan di Supabase
+    if (isSupabaseConfigured) {
+      try {
+        final res = await Supabase.instance.client
+            .from('admin_settings')
+            .select('value')
+            .eq('key', 'admin_password')
+            .maybeSingle();
+        if (res != null && res['value'] == entered) {
+          widget.onLoginSuccess();
+          return;
+        }
+      } catch (_) {}
+    }
+    setState(() {
+      _isLoggingIn = false;
+      _errorMessage = 'Password salah! Silakan coba lagi.';
+    });
+  }
+
+  // ── Forgot Password Flow ────────────────────────────────────────────────
+  void _showForgotPasswordDialog() {
+    final emailCtrl = TextEditingController();
+    final otpCtrl = TextEditingController();
+    final pass1Ctrl = TextEditingController();
+    final pass2Ctrl = TextEditingController();
+    int step = 0; // 0=email, 1=otp, 2=new password
+    String? savedEmail;
+    bool isLoading = false;
+    String? dialogError;
+    bool obscure1 = true;
+    bool obscure2 = true;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(builder: (ctx, setDlg) {
+          // ── Step 0: Masukkan Email ──────────────────────────────
+          Widget buildStep0() {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Lupa Password',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A2F5A)),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Masukkan email admin Anda. Kami akan mengirimkan kode OTP untuk verifikasi.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: emailCtrl,
+                  keyboardType: TextInputType.emailAddress,
+                  decoration: InputDecoration(
+                    labelText: 'Email Admin',
+                    hintText: 'contoh@gmail.com',
+                    prefixIcon: const Icon(Icons.email_outlined,
+                        color: Color(0xFF1A2F5A)),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide:
+                          const BorderSide(color: Color(0xFF1A2F5A), width: 1.5),
+                    ),
+                  ),
+                ),
+                if (dialogError != null) ...
+                  _buildDialogError(dialogError!),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(ctx),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Batal'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isLoading
+                            ? null
+                            : () async {
+                                final email = emailCtrl.text.trim();
+                                if (email.isEmpty || !email.contains('@')) {
+                                  setDlg(() => dialogError =
+                                      'Masukkan email yang valid.');
+                                  return;
+                                }
+                                setDlg(() {
+                                  isLoading = true;
+                                  dialogError = null;
+                                });
+                                try {
+                                  await Supabase.instance.client.auth
+                                      .signInWithOtp(
+                                    email: email,
+                                    shouldCreateUser: true,
+                                  );
+                                  savedEmail = email;
+                                  setDlg(() {
+                                    isLoading = false;
+                                    step = 1;
+                                  });
+                                } catch (e) {
+                                  setDlg(() {
+                                    isLoading = false;
+                                    dialogError =
+                                        'Gagal mengirim OTP. Periksa koneksi Anda.';
+                                  });
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A2F5A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Text('Kirim OTP'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+
+          // ── Step 1: Masukkan OTP ────────────────────────────────
+          Widget buildStep1() {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Masukkan Kode OTP',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A2F5A)),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Kode 6 digit telah dikirim ke\n${savedEmail ?? ''}',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 20),
+                TextField(
+                  controller: otpCtrl,
+                  keyboardType: TextInputType.number,
+                  maxLength: 6,
+                  textAlign: TextAlign.center,
+                  style: const TextStyle(
+                      fontSize: 24,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 8),
+                  decoration: InputDecoration(
+                    counterText: '',
+                    hintText: '000000',
+                    hintStyle: TextStyle(
+                        color: Colors.grey[300],
+                        fontSize: 24,
+                        letterSpacing: 8),
+                    border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                    focusedBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(10),
+                      borderSide:
+                          const BorderSide(color: Color(0xFF1A2F5A), width: 1.5),
+                    ),
+                  ),
+                ),
+                if (dialogError != null) ...
+                  _buildDialogError(dialogError!),
+                const SizedBox(height: 20),
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => setDlg(() {
+                          step = 0;
+                          dialogError = null;
+                        }),
+                        style: OutlinedButton.styleFrom(
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: const Text('Kembali'),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: isLoading
+                            ? null
+                            : () async {
+                                final otp = otpCtrl.text.trim();
+                                if (otp.length != 6) {
+                                  setDlg(() => dialogError =
+                                      'Kode OTP harus 6 digit.');
+                                  return;
+                                }
+                                setDlg(() {
+                                  isLoading = true;
+                                  dialogError = null;
+                                });
+                                try {
+                                  await Supabase.instance.client.auth
+                                      .verifyOTP(
+                                    email: savedEmail!,
+                                    token: otp,
+                                    type: OtpType.email,
+                                  );
+                                  setDlg(() {
+                                    isLoading = false;
+                                    step = 2;
+                                  });
+                                } catch (e) {
+                                  setDlg(() {
+                                    isLoading = false;
+                                    dialogError =
+                                        'Kode OTP salah atau sudah kedaluwarsa.';
+                                  });
+                                }
+                              },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A2F5A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(vertical: 14),
+                          shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(10)),
+                        ),
+                        child: isLoading
+                            ? const SizedBox(
+                                width: 18,
+                                height: 18,
+                                child: CircularProgressIndicator(
+                                    strokeWidth: 2, color: Colors.white))
+                            : const Text('Verifikasi OTP'),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            );
+          }
+
+          // ── Step 2: Password Baru ────────────────────────────────
+          Widget buildStep2() {
+            return Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.stretch,
+              children: [
+                const Text(
+                  'Buat Password Baru',
+                  style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                      color: Color(0xFF1A2F5A)),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  'Masukkan password baru untuk akun admin.',
+                  style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                ),
+                const SizedBox(height: 20),
+                // Password baru
+                StatefulBuilder(builder: (_, setObs) {
+                  return TextField(
+                    controller: pass1Ctrl,
+                    obscureText: obscure1,
+                    decoration: InputDecoration(
+                      labelText: 'Password Baru',
+                      prefixIcon: const Icon(Icons.lock_outline,
+                          color: Color(0xFF1A2F5A)),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscure1
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined),
+                        onPressed: () => setDlg(() => obscure1 = !obscure1),
+                      ),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF1A2F5A), width: 1.5),
+                      ),
+                    ),
+                  );
+                }),
+                const SizedBox(height: 12),
+                // Konfirmasi password
+                StatefulBuilder(builder: (_, setObs) {
+                  return TextField(
+                    controller: pass2Ctrl,
+                    obscureText: obscure2,
+                    decoration: InputDecoration(
+                      labelText: 'Konfirmasi Password',
+                      prefixIcon: const Icon(Icons.lock_reset_outlined,
+                          color: Color(0xFF1A2F5A)),
+                      suffixIcon: IconButton(
+                        icon: Icon(obscure2
+                            ? Icons.visibility_outlined
+                            : Icons.visibility_off_outlined),
+                        onPressed: () => setDlg(() => obscure2 = !obscure2),
+                      ),
+                      border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10)),
+                      focusedBorder: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(10),
+                        borderSide: const BorderSide(
+                            color: Color(0xFF1A2F5A), width: 1.5),
+                      ),
+                    ),
+                  );
+                }),
+                if (dialogError != null) ...
+                  _buildDialogError(dialogError!),
+                const SizedBox(height: 20),
+                ElevatedButton(
+                  onPressed: isLoading
+                      ? null
+                      : () async {
+                          final p1 = pass1Ctrl.text;
+                          final p2 = pass2Ctrl.text;
+                          if (p1.length < 6) {
+                            setDlg(() => dialogError =
+                                'Password minimal 6 karakter.');
+                            return;
+                          }
+                          if (p1 != p2) {
+                            setDlg(() =>
+                                dialogError = 'Konfirmasi password tidak cocok.');
+                            return;
+                          }
+                          setDlg(() {
+                            isLoading = true;
+                            dialogError = null;
+                          });
+                          try {
+                            // Simpan password baru ke Supabase
+                            await Supabase.instance.client
+                                .from('admin_settings')
+                                .upsert({'key': 'admin_password', 'value': p1});
+                            Navigator.pop(ctx);
+                            if (mounted) {
+                              ScaffoldMessenger.of(context).showSnackBar(
+                                const SnackBar(
+                                  content: Text(
+                                      '✅ Password berhasil diperbarui! Silakan login dengan password baru.'),
+                                  backgroundColor: Color(0xFF1A7A4A),
+                                  duration: Duration(seconds: 4),
+                                ),
+                              );
+                            }
+                          } catch (e) {
+                            setDlg(() {
+                              isLoading = false;
+                              dialogError = 'Gagal menyimpan password baru.';
+                            });
+                          }
+                        },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A2F5A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(10)),
+                  ),
+                  child: isLoading
+                      ? const SizedBox(
+                          width: 18,
+                          height: 18,
+                          child: CircularProgressIndicator(
+                              strokeWidth: 2, color: Colors.white))
+                      : const Text('Simpan Password Baru',
+                          style: TextStyle(fontWeight: FontWeight.w600)),
+                ),
+              ],
+            );
+          }
+
+          return AlertDialog(
+            shape:
+                RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            contentPadding: const EdgeInsets.all(28),
+            content: SizedBox(
+              width: 400,
+              child: step == 0
+                  ? buildStep0()
+                  : step == 1
+                      ? buildStep1()
+                      : buildStep2(),
+            ),
+          );
+        });
+      },
+    );
+  }
+
+  List<Widget> _buildDialogError(String msg) {
+    return [
+      const SizedBox(height: 10),
+      Container(
+        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFFF5F5),
+          borderRadius: BorderRadius.circular(8),
+          border: Border.all(color: const Color(0xFFFEB2B2)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.error_outline_rounded,
+                color: Color(0xFFE53E3E), size: 16),
+            const SizedBox(width: 8),
+            Expanded(
+              child: Text(msg,
+                  style: const TextStyle(
+                      color: Color(0xFFE53E3E),
+                      fontSize: 12,
+                      fontWeight: FontWeight.w500)),
+            ),
+          ],
+        ),
+      ),
+    ];
   }
 
   @override
@@ -1568,7 +2018,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ],
               ),
               child: ElevatedButton(
-                onPressed: _handleLogin,
+                onPressed: _isLoggingIn ? null : _handleLogin,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: Colors.transparent,
                   foregroundColor: Colors.white,
@@ -1579,20 +2029,47 @@ class _LoginScreenState extends State<LoginScreen>
                     borderRadius: BorderRadius.circular(10),
                   ),
                 ),
-                child: const Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Icon(Icons.login_rounded, size: 18),
-                    SizedBox(width: 8),
-                    Text(
-                      'Masuk ke Panel Admin',
-                      style: TextStyle(
-                        fontWeight: FontWeight.w600,
-                        fontSize: 14,
-                        letterSpacing: 0.2,
+                child: _isLoggingIn
+                    ? const SizedBox(
+                        width: 20,
+                        height: 20,
+                        child: CircularProgressIndicator(
+                            strokeWidth: 2, color: Colors.white))
+                    : const Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.login_rounded, size: 18),
+                          SizedBox(width: 8),
+                          Text(
+                            'Masuk ke Panel Admin',
+                            style: TextStyle(
+                              fontWeight: FontWeight.w600,
+                              fontSize: 14,
+                              letterSpacing: 0.2,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
+              ),
+            ),
+
+            // Lupa Password link
+            Align(
+              alignment: Alignment.centerRight,
+              child: TextButton(
+                onPressed: isSupabaseConfigured ? _showForgotPasswordDialog : null,
+                style: TextButton.styleFrom(
+                  foregroundColor: const Color(0xFF1A2F5A),
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 4, vertical: 2),
+                ),
+                child: const Text(
+                  'Lupa Password?',
+                  style: TextStyle(
+                    fontSize: 12.5,
+                    fontWeight: FontWeight.w600,
+                    decoration: TextDecoration.underline,
+                  ),
                 ),
               ),
             ),
