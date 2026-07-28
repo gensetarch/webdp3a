@@ -1088,11 +1088,23 @@ class _LoginScreenState extends State<LoginScreen>
       try {
         final res = await Supabase.instance.client
             .from('admin_settings')
-            .select('value')
-            .eq('key', 'admin_email')
-            .maybeSingle();
-        if (res != null && res['value'] != null) {
-          emailCtrl.text = res['value'].toString();
+            .select('key, value');
+        String? adminEmail;
+        String? superadminEmail;
+        for (var row in res) {
+          if (row['key'] == 'admin_email' && row['value'] != null) {
+            adminEmail = row['value'].toString();
+          }
+          if (row['key'] == 'superadmin_email' && row['value'] != null) {
+            superadminEmail = row['value'].toString();
+          }
+        }
+        if (adminEmail != null && adminEmail.isNotEmpty) {
+          emailCtrl.text = adminEmail;
+        } else if (superadminEmail != null && superadminEmail.isNotEmpty) {
+          emailCtrl.text = superadminEmail;
+        } else {
+          emailCtrl.text = 'bayubabayo780@gmail.com';
         }
       } catch (_) {}
     }
@@ -1169,7 +1181,7 @@ class _LoginScreenState extends State<LoginScreen>
                         onPressed: isLoading
                             ? null
                             : () async {
-                                final email = emailCtrl.text.trim();
+                                final email = emailCtrl.text.trim().toLowerCase();
                                 if (email.isEmpty || !email.contains('@')) {
                                   setDlg(() => dialogError =
                                       'Masukkan email yang valid.');
@@ -1179,6 +1191,65 @@ class _LoginScreenState extends State<LoginScreen>
                                   isLoading = true;
                                   dialogError = null;
                                 });
+
+                                // Cek apakah email terdaftar & memiliki akses OTP
+                                bool isAuthorized = false;
+                                String superadminEmail = 'bayubabayo780@gmail.com';
+                                try {
+                                  if (isSupabaseConfigured) {
+                                    final res = await Supabase.instance.client
+                                        .from('admin_settings')
+                                        .select('key, value');
+                                    List<String> allowedList = [
+                                      'bayubabayo780@gmail.com'
+                                    ];
+                                    for (var row in res) {
+                                      if (row['key'] == 'superadmin_email' &&
+                                          row['value'] != null) {
+                                        superadminEmail = row['value']
+                                            .toString()
+                                            .trim()
+                                            .toLowerCase();
+                                        allowedList.add(superadminEmail);
+                                      }
+                                      if (row['key'] == 'allowed_emails' &&
+                                          row['value'] != null) {
+                                        final raw = row['value']
+                                            .toString()
+                                            .toLowerCase();
+                                        allowedList.addAll(raw
+                                            .split(RegExp(r'[,\n]'))
+                                            .map((e) => e.trim())
+                                            .where((e) => e.isNotEmpty));
+                                      }
+                                      if (row['key'] == 'admin_email' &&
+                                          row['value'] != null) {
+                                        allowedList.add(row['value']
+                                            .toString()
+                                            .trim()
+                                            .toLowerCase());
+                                      }
+                                    }
+
+                                    if (allowedList.contains(email)) {
+                                      isAuthorized = true;
+                                    }
+                                  } else {
+                                    isAuthorized = true;
+                                  }
+                                } catch (_) {
+                                  isAuthorized = true;
+                                }
+
+                                if (!isAuthorized) {
+                                  setDlg(() {
+                                    isLoading = false;
+                                    dialogError =
+                                        'Email ini tidak terdaftar / tidak memiliki izin akses OTP. Hubungi Superadmin ($superadminEmail).';
+                                  });
+                                  return;
+                                }
+
                                 try {
                                   await Supabase.instance.client.auth
                                       .signInWithOtp(
@@ -2224,19 +2295,22 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
     super.dispose();
   }
 
-  // ── Admin Settings Dialog (Email Pemulihan OTP & Password) ──────────────────
+  // ── Admin Settings Dialog (Opsi 1: Superadmin, Opsi 2: Email Akses OTP, Opsi 3: Password) ──
   void _showAdminSettingsDialog() async {
-    final emailCtrl = TextEditingController();
+    final superadminEmailCtrl = TextEditingController();
+    final allowedEmailsCtrl = TextEditingController();
     final passCtrl = TextEditingController();
     final superadminOtpCtrl = TextEditingController();
-    const superadminEmail = 'bayubabayo780@gmail.com';
-    String existingEmail = superadminEmail;
+
+    String currentSuperadminEmail = 'bayubabayo780@gmail.com';
+    int selectedTab = 0; // 0=Email Akses OTP, 1=Ganti Superadmin, 2=Ganti Password
     int step = 0; // 0=Form Edit, 1=Verifikasi OTP Superadmin
     bool isSaving = false;
     String? dialogError;
     bool obscurePass = true;
-    String? pendingNewEmail;
-    String? pendingNewPass;
+
+    String? pendingActionType; // 'superadmin' or 'allowed_emails'
+    String? pendingNewValue;
 
     // Load existing settings from Supabase
     if (isSupabaseConfigured) {
@@ -2245,12 +2319,21 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
             .from('admin_settings')
             .select('key, value');
         for (var row in res) {
-          if (row['key'] == 'admin_email' && row['value'] != null) {
-            existingEmail = row['value'].toString();
-            emailCtrl.text = existingEmail;
+          if (row['key'] == 'superadmin_email' &&
+              row['value'] != null &&
+              row['value'].toString().isNotEmpty) {
+            currentSuperadminEmail = row['value'].toString();
+          }
+          if (row['key'] == 'allowed_emails' && row['value'] != null) {
+            allowedEmailsCtrl.text = row['value'].toString();
           }
         }
       } catch (_) {}
+    }
+
+    superadminEmailCtrl.text = currentSuperadminEmail;
+    if (allowedEmailsCtrl.text.isEmpty) {
+      allowedEmailsCtrl.text = currentSuperadminEmail;
     }
 
     if (!mounted) return;
@@ -2261,89 +2344,264 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
       builder: (ctx) {
         return StatefulBuilder(
           builder: (ctx, setDlg) {
-            // ── Step 0: Form Edit Settings ───────────────────────────
+            // ── Step 0: Form Edit Settings dengan 3 Opsi ─────────────────────────
             Widget buildStep0() {
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
-                  const Text(
-                    'Kelola email pemulihan untuk menerima kode OTP lupa password dan kata sandi admin instansi.',
-                    style: TextStyle(fontSize: 12.5, color: Color(0xFF4A5568)),
-                  ),
-                  const SizedBox(height: 16),
-                  Container(height: 1, color: const Color(0xFFEEF2F8)),
-                  const SizedBox(height: 16),
-
-                  // Email Pemulihan
-                  const Text(
-                    'Email Pemulihan (Penerima OTP)',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A2F5A)),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    'Perubahan email baru membutuhkan izin OTP dari Superadmin ($superadminEmail).',
-                    style: TextStyle(fontSize: 11, color: Colors.grey[600]),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: emailCtrl,
-                    keyboardType: TextInputType.emailAddress,
-                    decoration: InputDecoration(
-                      hintText: 'admin.dp3a@sulselprov.go.id',
-                      prefixIcon: const Icon(Icons.mark_email_read_outlined,
-                          size: 20),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                            color: Color(0xFF1A2F5A), width: 1.5),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                  // Tab Navigation Header
+                  Container(
+                    padding: const EdgeInsets.all(4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF1F5F9),
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-
-                  // Password Admin Baru (Opsional)
-                  const Text(
-                    'Password Admin Baru (Opsional)',
-                    style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: Color(0xFF1A2F5A)),
-                  ),
-                  const SizedBox(height: 6),
-                  TextField(
-                    controller: passCtrl,
-                    obscureText: obscurePass,
-                    decoration: InputDecoration(
-                      hintText: 'Kosongkan jika tidak ingin mengubah',
-                      prefixIcon: const Icon(Icons.lock_outline, size: 20),
-                      suffixIcon: IconButton(
-                        icon: Icon(
-                          obscurePass
-                              ? Icons.visibility_outlined
-                              : Icons.visibility_off_outlined,
-                          size: 20,
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setDlg(() {
+                              selectedTab = 0;
+                              dialogError = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: selectedTab == 0
+                                    ? Colors.white
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: selectedTab == 0
+                                    ? [
+                                        BoxShadow(
+                                            color: Colors.black.withOpacity(0.05),
+                                            blurRadius: 4)
+                                      ]
+                                    : [],
+                              ),
+                              child: Text(
+                                '📧 Email Akses OTP',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: selectedTab == 0
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: selectedTab == 0
+                                      ? const Color(0xFF1A2F5A)
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ),
                         ),
-                        onPressed: () => setDlg(() => obscurePass = !obscurePass),
-                      ),
-                      border: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10)),
-                      focusedBorder: OutlineInputBorder(
-                        borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(
-                            color: Color(0xFF1A2F5A), width: 1.5),
-                      ),
-                      contentPadding: const EdgeInsets.symmetric(
-                          horizontal: 12, vertical: 12),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setDlg(() {
+                              selectedTab = 1;
+                              dialogError = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: selectedTab == 1
+                                    ? Colors.white
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: selectedTab == 1
+                                    ? [
+                                        BoxShadow(
+                                            color: Colors.black.withOpacity(0.05),
+                                            blurRadius: 4)
+                                      ]
+                                    : [],
+                              ),
+                              child: Text(
+                                '🛡️ Superadmin',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: selectedTab == 1
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: selectedTab == 1
+                                      ? const Color(0xFF1A2F5A)
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Expanded(
+                          child: InkWell(
+                            onTap: () => setDlg(() {
+                              selectedTab = 2;
+                              dialogError = null;
+                            }),
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(vertical: 8),
+                              decoration: BoxDecoration(
+                                color: selectedTab == 2
+                                    ? Colors.white
+                                    : Colors.transparent,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: selectedTab == 2
+                                    ? [
+                                        BoxShadow(
+                                            color: Colors.black.withOpacity(0.05),
+                                            blurRadius: 4)
+                                      ]
+                                    : [],
+                              ),
+                              child: Text(
+                                '🔑 Password',
+                                textAlign: TextAlign.center,
+                                style: TextStyle(
+                                  fontSize: 11.5,
+                                  fontWeight: selectedTab == 2
+                                      ? FontWeight.bold
+                                      : FontWeight.w500,
+                                  color: selectedTab == 2
+                                      ? const Color(0xFF1A2F5A)
+                                      : Colors.grey[600],
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
                     ),
                   ),
+                  const SizedBox(height: 16),
+
+                  // TAB 0: KELOLA EMAIL AKSES OTP (MULTI-EMAIL)
+                  if (selectedTab == 0) ...[
+                    const Text(
+                      'Daftar Email yang Memiliki Akses OTP',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A2F5A)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Masukkan email instansi / staf yang diizinkan menerima OTP saat lupa password. Pisahkan dengan koma atau baris baru.',
+                      style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: allowedEmailsCtrl,
+                      maxLines: 3,
+                      keyboardType: TextInputType.multiline,
+                      decoration: InputDecoration(
+                        hintText:
+                            'admin1@sulselprov.go.id, admin2@sulselprov.go.id',
+                        prefixIcon: const Padding(
+                          padding: EdgeInsets.only(bottom: 36),
+                          child: Icon(Icons.mark_email_read_outlined, size: 20),
+                        ),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF1A2F5A), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.all(12),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '⚠️ Perubahan daftar email membutuhkan persetujuan OTP dari Superadmin ($currentSuperadminEmail).',
+                      style: const TextStyle(
+                          fontSize: 10.5, color: Color(0xFFB45309)),
+                    ),
+                  ],
+
+                  // TAB 1: GANTI / TRANSFER SUPERADMIN
+                  if (selectedTab == 1) ...[
+                    const Text(
+                      'Transfer / Ganti Email Superadmin',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A2F5A)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Superadmin memiliki wewenang penuh menyetujui penambahan email baru. Ganti jika penanggung jawab berubah.',
+                      style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: superadminEmailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        hintText: 'superadmin.baru@gmail.com',
+                        prefixIcon: const Icon(Icons.verified_user_outlined,
+                            size: 20, color: Color(0xFFCFA836)),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF1A2F5A), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      '⚠️ Penggantian Superadmin membutuhkan kode OTP izin yang dikirimkan ke Superadmin SAAT INI ($currentSuperadminEmail).',
+                      style: const TextStyle(
+                          fontSize: 10.5, color: Color(0xFFB45309)),
+                    ),
+                  ],
+
+                  // TAB 2: GANTI PASSWORD ADMIN WEB
+                  if (selectedTab == 2) ...[
+                    const Text(
+                      'Kata Sandi Admin Web Baru',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A2F5A)),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Ubah kata sandi utama yang digunakan untuk masuk ke Panel Admin web ini.',
+                      style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
+                    ),
+                    const SizedBox(height: 10),
+                    TextField(
+                      controller: passCtrl,
+                      obscureText: obscurePass,
+                      decoration: InputDecoration(
+                        hintText: 'Masukkan kata sandi admin baru',
+                        prefixIcon: const Icon(Icons.lock_outline, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscurePass
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            size: 20,
+                          ),
+                          onPressed: () => setDlg(() => obscurePass = !obscurePass),
+                        ),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF1A2F5A), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                  ],
 
                   if (dialogError != null) ...[
                     const SizedBox(height: 12),
@@ -2362,7 +2620,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                     ),
                   ],
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 20),
                   Row(
                     children: [
                       Expanded(
@@ -2382,41 +2640,35 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                           onPressed: isSaving
                               ? null
                               : () async {
-                                  final email = emailCtrl.text.trim();
-                                  final pass = passCtrl.text;
-
-                                  if (email.isNotEmpty && !email.contains('@')) {
-                                    setDlg(() =>
-                                        dialogError = 'Format email tidak valid.');
-                                    return;
-                                  }
-                                  if (pass.isNotEmpty && pass.length < 6) {
-                                    setDlg(() => dialogError =
-                                        'Password minimal 6 karakter.');
-                                    return;
-                                  }
-
                                   setDlg(() {
                                     isSaving = true;
                                     dialogError = null;
                                   });
 
-                                  // Jika email berubah → Butuh persetujuan Superadmin via OTP
-                                  final isEmailChanged =
-                                      email.isNotEmpty && email != existingEmail;
+                                  // ── Opsi 1: Simpan Email Akses OTP ─────────
+                                  if (selectedTab == 0) {
+                                    final allowedRaw =
+                                        allowedEmailsCtrl.text.trim();
+                                    if (allowedRaw.isEmpty) {
+                                      setDlg(() {
+                                        isSaving = false;
+                                        dialogError =
+                                            'Masukkan minimal 1 email akses OTP.';
+                                      });
+                                      return;
+                                    }
+                                    pendingActionType = 'allowed_emails';
+                                    pendingNewValue = allowedRaw;
 
-                                  if (isEmailChanged) {
                                     try {
-                                      // Kirim OTP persetujuan ke Superadmin
+                                      // Kirim OTP Izin ke Superadmin saat ini
                                       await Supabase.instance.client.auth
                                           .signInWithOtp(
-                                        email: superadminEmail,
+                                        email: currentSuperadminEmail,
                                         shouldCreateUser: true,
                                         emailRedirectTo:
                                             'https://gensetarch.github.io/webdp3a',
                                       );
-                                      pendingNewEmail = email;
-                                      pendingNewPass = pass;
                                       setDlg(() {
                                         isSaving = false;
                                         step = 1;
@@ -2425,14 +2677,71 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                       setDlg(() {
                                         isSaving = false;
                                         dialogError =
-                                            'Gagal mengirim OTP izin ke Superadmin ($superadminEmail). Periksa koneksi.';
+                                            'Gagal mengirim OTP izin ke Superadmin ($currentSuperadminEmail). Periksa koneksi.';
                                       });
                                     }
-                                  } else {
-                                    // Hanya ganti password (jika ada) tanpa ganti email
+                                  }
+
+                                  // ── Opsi 2: Transfer Superadmin ──────────
+                                  else if (selectedTab == 1) {
+                                    final newSuperadmin =
+                                        superadminEmailCtrl.text.trim();
+                                    if (newSuperadmin.isEmpty ||
+                                        !newSuperadmin.contains('@')) {
+                                      setDlg(() {
+                                        isSaving = false;
+                                        dialogError =
+                                            'Masukkan email Superadmin yang valid.';
+                                      });
+                                      return;
+                                    }
+                                    if (newSuperadmin == currentSuperadminEmail) {
+                                      setDlg(() {
+                                        isSaving = false;
+                                        dialogError =
+                                            'Email yang dimasukkan masih sama dengan Superadmin saat ini.';
+                                      });
+                                      return;
+                                    }
+                                    pendingActionType = 'superadmin';
+                                    pendingNewValue = newSuperadmin;
+
                                     try {
-                                      if (isSupabaseConfigured &&
-                                          pass.isNotEmpty) {
+                                      // Kirim OTP Izin ke Superadmin saat ini
+                                      await Supabase.instance.client.auth
+                                          .signInWithOtp(
+                                        email: currentSuperadminEmail,
+                                        shouldCreateUser: true,
+                                        emailRedirectTo:
+                                            'https://gensetarch.github.io/webdp3a',
+                                      );
+                                      setDlg(() {
+                                        isSaving = false;
+                                        step = 1;
+                                      });
+                                    } catch (e) {
+                                      setDlg(() {
+                                        isSaving = false;
+                                        dialogError =
+                                            'Gagal mengirim OTP izin ke Superadmin ($currentSuperadminEmail). Periksa koneksi.';
+                                      });
+                                    }
+                                  }
+
+                                  // ── Opsi 3: Ganti Password ───────────────
+                                  else if (selectedTab == 2) {
+                                    final pass = passCtrl.text;
+                                    if (pass.length < 6) {
+                                      setDlg(() {
+                                        isSaving = false;
+                                        dialogError =
+                                            'Password minimal 6 karakter.';
+                                      });
+                                      return;
+                                    }
+
+                                    try {
+                                      if (isSupabaseConfigured) {
                                         await Supabase.instance.client
                                             .from('admin_settings')
                                             .upsert({
@@ -2476,7 +2785,9 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : const Text('Simpan'),
+                              : Text(selectedTab == 2
+                                  ? 'Simpan Password'
+                                  : 'Lanjut OTP Izin'),
                         ),
                       ),
                     ],
@@ -2487,6 +2798,10 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
 
             // ── Step 1: OTP Verifikasi Izin Superadmin ───────────────
             Widget buildStep1() {
+              final actionText = pendingActionType == 'superadmin'
+                  ? 'Penggantian Superadmin Baru:\n$pendingNewValue'
+                  : 'Pembaruan Daftar Email Akses OTP:\n$pendingNewValue';
+
               return Column(
                 mainAxisSize: MainAxisSize.min,
                 crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -2516,7 +2831,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                               ),
                               const SizedBox(height: 2),
                               Text(
-                                'Email penerima OTP akan diubah menjadi:\n$pendingNewEmail',
+                                actionText,
                                 style: const TextStyle(
                                     fontSize: 11.5, color: Color(0xFF78350F)),
                               ),
@@ -2528,7 +2843,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                   ),
                   const SizedBox(height: 16),
                   Text(
-                    'Kode OTP persetujuan telah dikirimkan ke email Superadmin:\n$superadminEmail',
+                    'Kode OTP persetujuan telah dikirimkan ke email Superadmin saat ini:\n$currentSuperadminEmail',
                     style: TextStyle(fontSize: 12.5, color: Colors.grey[700]),
                   ),
                   const SizedBox(height: 16),
@@ -2609,40 +2924,42 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                   });
 
                                   try {
-                                    // Verifikasi OTP dari Superadmin
+                                    // Verifikasi OTP dari Superadmin saat ini
                                     await Supabase.instance.client.auth.verifyOTP(
-                                      email: superadminEmail,
+                                      email: currentSuperadminEmail,
                                       token: otp,
                                       type: OtpType.email,
                                     );
 
-                                    // OTP Valid -> Simpan email baru ke Supabase admin_settings
+                                    // OTP Valid -> Simpan pengaturan ke Supabase
                                     if (isSupabaseConfigured &&
-                                        pendingNewEmail != null) {
-                                      await Supabase.instance.client
-                                          .from('admin_settings')
-                                          .upsert({
-                                        'key': 'admin_email',
-                                        'value': pendingNewEmail
-                                      });
-
-                                      if (pendingNewPass != null &&
-                                          pendingNewPass!.isNotEmpty) {
+                                        pendingNewValue != null) {
+                                      if (pendingActionType == 'superadmin') {
                                         await Supabase.instance.client
                                             .from('admin_settings')
                                             .upsert({
-                                          'key': 'admin_password',
-                                          'value': pendingNewPass
+                                          'key': 'superadmin_email',
+                                          'value': pendingNewValue
+                                        });
+                                      } else if (pendingActionType ==
+                                          'allowed_emails') {
+                                        await Supabase.instance.client
+                                            .from('admin_settings')
+                                            .upsert({
+                                          'key': 'allowed_emails',
+                                          'value': pendingNewValue
                                         });
                                       }
                                     }
 
                                     if (ctx.mounted) Navigator.pop(ctx);
                                     if (mounted) {
+                                      final msg = pendingActionType == 'superadmin'
+                                          ? '✅ Email Superadmin baru ($pendingNewValue) berhasil disetujui & diperbarui!'
+                                          : '✅ Daftar email akses OTP berhasil disetujui & diperbarui!';
                                       ScaffoldMessenger.of(context).showSnackBar(
                                         SnackBar(
-                                          content: Text(
-                                              '✅ Email pemulihan baru ($pendingNewEmail) berhasil disetujui Superadmin & disimpan!'),
+                                          content: Text(msg),
                                           backgroundColor:
                                               const Color(0xFF1A7A4A),
                                           duration: const Duration(seconds: 4),
@@ -2695,14 +3012,16 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Icon(
-                        step == 0 ? Icons.settings_outlined : Icons.shield_outlined,
+                        step == 0
+                            ? Icons.settings_outlined
+                            : Icons.shield_outlined,
                         color: const Color(0xFF1A2F5A),
                         size: 22),
                   ),
                   const SizedBox(width: 12),
                   Text(
                     step == 0
-                        ? 'Pengaturan Admin'
+                        ? 'Pengaturan Admin & Akses OTP'
                         : 'Persetujuan Superadmin',
                     style: const TextStyle(
                       fontSize: 18,
@@ -2713,7 +3032,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                 ],
               ),
               content: SizedBox(
-                width: 420,
+                width: 460,
                 child: step == 0 ? buildStep0() : buildStep1(),
               ),
             );
