@@ -4214,9 +4214,6 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
     );
   }
 
-  final ScrollController _scrollController = ScrollController();
-  String _itemSearchQuery = '';
-
   @override
   void initState() {
     super.initState();
