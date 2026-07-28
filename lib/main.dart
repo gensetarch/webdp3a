@@ -1082,8 +1082,20 @@ class _LoginScreenState extends State<LoginScreen>
 
 
   // ── Forgot Password Flow ────────────────────────────────────────────────
-  void _showForgotPasswordDialog() {
+  Future<void> _showForgotPasswordDialog() async {
     final emailCtrl = TextEditingController();
+    if (isSupabaseConfigured) {
+      try {
+        final res = await Supabase.instance.client
+            .from('admin_settings')
+            .select('value')
+            .eq('key', 'admin_email')
+            .maybeSingle();
+        if (res != null && res['value'] != null) {
+          emailCtrl.text = res['value'].toString();
+        }
+      } catch (_) {}
+    }
     final otpCtrl = TextEditingController();
     final pass1Ctrl = TextEditingController();
     final pass2Ctrl = TextEditingController();
@@ -2210,6 +2222,274 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
     super.dispose();
   }
 
+  // ── Admin Settings Dialog (Email Pemulihan OTP & Password) ──────────────────
+  void _showAdminSettingsDialog() async {
+    final emailCtrl = TextEditingController();
+    final passCtrl = TextEditingController();
+    bool isSaving = false;
+    String? dialogError;
+    bool obscurePass = true;
+
+    // Load existing settings from Supabase
+    if (isSupabaseConfigured) {
+      try {
+        final res = await Supabase.instance.client
+            .from('admin_settings')
+            .select('key, value');
+        for (var row in res) {
+          if (row['key'] == 'admin_email') {
+            emailCtrl.text = row['value'].toString();
+          }
+        }
+      } catch (_) {}
+    }
+
+    if (!mounted) return;
+
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (ctx) {
+        return StatefulBuilder(
+          builder: (ctx, setDlg) {
+            return AlertDialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(16)),
+              contentPadding: const EdgeInsets.all(24),
+              title: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF1A2F5A).withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: const Icon(Icons.settings_outlined,
+                        color: Color(0xFF1A2F5A), size: 22),
+                  ),
+                  const SizedBox(width: 12),
+                  const Text(
+                    'Pengaturan Admin',
+                    style: TextStyle(
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      color: Color(0xFF1A2F5A),
+                    ),
+                  ),
+                ],
+              ),
+              content: SizedBox(
+                width: 420,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  crossAxisAlignment: CrossAxisAlignment.stretch,
+                  children: [
+                    const Text(
+                      'Kelola email pemulihan untuk menerima kode OTP lupa password dan kata sandi admin instansi.',
+                      style: TextStyle(fontSize: 12.5, color: Color(0xFF4A5568)),
+                    ),
+                    const SizedBox(height: 16),
+                    Container(height: 1, color: const Color(0xFFEEF2F8)),
+                    const SizedBox(height: 16),
+
+                    // Email Pemulihan
+                    const Text(
+                      'Email Pemulihan (Penerima OTP)',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A2F5A)),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: emailCtrl,
+                      keyboardType: TextInputType.emailAddress,
+                      decoration: InputDecoration(
+                        hintText: 'admin.dp3a@sulselprov.go.id',
+                        prefixIcon: const Icon(Icons.mark_email_read_outlined,
+                            size: 20),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF1A2F5A), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+
+                    // Password Admin Baru (Opsional)
+                    const Text(
+                      'Password Admin Baru (Opsional)',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF1A2F5A)),
+                    ),
+                    const SizedBox(height: 6),
+                    TextField(
+                      controller: passCtrl,
+                      obscureText: obscurePass,
+                      decoration: InputDecoration(
+                        hintText: 'Kosongkan jika tidak ingin mengubah',
+                        prefixIcon:
+                            const Icon(Icons.lock_outline, size: 20),
+                        suffixIcon: IconButton(
+                          icon: Icon(
+                            obscurePass
+                                ? Icons.visibility_outlined
+                                : Icons.visibility_off_outlined,
+                            size: 20,
+                          ),
+                          onPressed: () =>
+                              setDlg(() => obscurePass = !obscurePass),
+                        ),
+                        border: OutlineInputBorder(
+                            borderRadius: BorderRadius.circular(10)),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(10),
+                          borderSide: const BorderSide(
+                              color: Color(0xFF1A2F5A), width: 1.5),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
+                      ),
+                    ),
+
+                    if (dialogError != null) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF5F5),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: const Color(0xFFFEB2B2)),
+                        ),
+                        child: Text(
+                          dialogError!,
+                          style: const TextStyle(
+                              color: Color(0xFFE53E3E), fontSize: 12),
+                        ),
+                      ),
+                    ],
+
+                    const SizedBox(height: 24),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: () => Navigator.pop(ctx),
+                            style: OutlinedButton.styleFrom(
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: const Text('Batal'),
+                          ),
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: isSaving
+                                ? null
+                                : () async {
+                                    final email = emailCtrl.text.trim();
+                                    final pass = passCtrl.text;
+                                    if (email.isNotEmpty &&
+                                        !email.contains('@')) {
+                                      setDlg(() => dialogError =
+                                          'Format email tidak valid.');
+                                      return;
+                                    }
+                                    setDlg(() {
+                                      isSaving = true;
+                                      dialogError = null;
+                                    });
+
+                                    try {
+                                      if (isSupabaseConfigured) {
+                                        if (email.isNotEmpty) {
+                                          await Supabase.instance.client
+                                              .from('admin_settings')
+                                              .upsert({
+                                            'key': 'admin_email',
+                                            'value': email
+                                          });
+                                        }
+                                        if (pass.isNotEmpty) {
+                                          if (pass.length < 6) {
+                                            setDlg(() {
+                                              isSaving = false;
+                                              dialogError =
+                                                  'Password minimal 6 karakter.';
+                                            });
+                                            return;
+                                          }
+                                          await Supabase.instance.client
+                                              .from('admin_settings')
+                                              .upsert({
+                                            'key': 'admin_password',
+                                            'value': pass
+                                          });
+                                        }
+                                      }
+
+                                      if (ctx.mounted) Navigator.pop(ctx);
+                                      if (mounted) {
+                                        ScaffoldMessenger.of(context)
+                                            .showSnackBar(
+                                          const SnackBar(
+                                            content: Text(
+                                                '✅ Pengaturan admin berhasil disimpan!'),
+                                            backgroundColor:
+                                                Color(0xFF1A7A4A),
+                                          ),
+                                        );
+                                      }
+                                    } catch (e) {
+                                      setDlg(() {
+                                        isSaving = false;
+                                        dialogError =
+                                            'Gagal menyimpan pengaturan: $e';
+                                      });
+                                    }
+                                  },
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1A2F5A),
+                              foregroundColor: Colors.white,
+                              padding:
+                                  const EdgeInsets.symmetric(vertical: 14),
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                            ),
+                            child: isSaving
+                                ? const SizedBox(
+                                    width: 18,
+                                    height: 18,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      color: Colors.white,
+                                    ),
+                                  )
+                                : const Text('Simpan'),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   // ── Logout dialog ──────────────────────────────────────────────────────────
   void _showLogoutConfirmation() async {
     final confirm = await showDialog<bool>(
@@ -2684,6 +2964,11 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
           style: TextStyle(fontWeight: FontWeight.bold),
         ),
         actions: [
+          IconButton(
+            onPressed: _showAdminSettingsDialog,
+            icon: const Icon(Icons.settings_outlined),
+            tooltip: 'Pengaturan Admin & Email OTP',
+          ),
           IconButton(
             onPressed: widget.onScanPressed,
             icon: const Icon(Icons.qr_code_scanner_rounded),
