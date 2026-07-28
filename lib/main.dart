@@ -3660,6 +3660,40 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // ----------------------------------------------------
 // 3. ROOM DETAILS SCREEN (LIST OF ASSETS & ROOM QR)
 // ----------------------------------------------------
+
+/// Utility function to parse item range strings like "1-5", "1, 3, 5-8" (similar to Word print range)
+List<Item> parseSelectedItemRange(String input, List<Item> totalItems) {
+  if (input.trim().isEmpty) return [];
+  final selectedIndices = <int>{};
+  final parts = input.split(',');
+  for (var part in parts) {
+    part = part.trim();
+    if (part.contains('-')) {
+      final rangeParts = part.split('-');
+      if (rangeParts.length == 2) {
+        final start = int.tryParse(rangeParts[0].trim());
+        final end = int.tryParse(rangeParts[1].trim());
+        if (start != null && end != null) {
+          final minVal = start < end ? start : end;
+          final maxVal = start < end ? end : start;
+          for (int i = minVal; i <= maxVal; i++) {
+            if (i >= 1 && i <= totalItems.length) {
+              selectedIndices.add(i - 1);
+            }
+          }
+        }
+      }
+    } else {
+      final val = int.tryParse(part);
+      if (val != null && val >= 1 && val <= totalItems.length) {
+        selectedIndices.add(val - 1);
+      }
+    }
+  }
+  final sortedList = selectedIndices.toList()..sort();
+  return sortedList.map((idx) => totalItems[idx]).toList();
+}
+
 class RoomDetailsScreen extends StatefulWidget {
   final Room room;
   final ValueChanged<List<Room>> onRoomsChanged;
@@ -3683,6 +3717,503 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
   late List<Room> _allRooms;
 
   final TextEditingController _itemSearchController = TextEditingController();
+  final ScrollController _scrollController = ScrollController();
+  String _itemSearchQuery = '';
+
+  void _showPrintItemsDialog() {
+    if (_room.items.isEmpty) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+            content: Text('Belum ada barang di ruangan ini untuk dicetak.')),
+      );
+      return;
+    }
+
+    showDialog(
+      context: context,
+      builder: (ctx) {
+        String printMode = 'all'; // 'all', 'range', 'manual'
+        final rangeController = TextEditingController(
+          text: _room.items.length >= 5 ? '1-5' : '1-${_room.items.length}',
+        );
+        Set<int> selectedIndices = Set<int>.from(
+          List.generate(_room.items.length, (i) => i),
+        );
+
+        List<Item> getSelectedItems() {
+          if (printMode == 'all') {
+            return List<Item>.from(_room.items);
+          } else if (printMode == 'range') {
+            return parseSelectedItemRange(rangeController.text, _room.items);
+          } else {
+            final sorted = selectedIndices.toList()..sort();
+            return sorted
+                .where((idx) => idx >= 0 && idx < _room.items.length)
+                .map((idx) => _room.items[idx])
+                .toList();
+          }
+        }
+
+        return StatefulBuilder(
+          builder: (dialogContext, setDialogState) {
+            final selectedItems = getSelectedItems();
+
+            return Dialog(
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(20)),
+              child: Container(
+                constraints:
+                    const BoxConstraints(maxWidth: 540, maxHeight: 680),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Dialog Header (Navy Gradient)
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 16),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF1A2F5A), Color(0xFF2D4A8A)],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(20),
+                          topRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: const Icon(Icons.print_rounded,
+                                color: Colors.white, size: 22),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                const Text(
+                                  'Cetak Barcode Barang',
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 18,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                                Text(
+                                  _room.name,
+                                  style: TextStyle(
+                                    color: Colors.white.withOpacity(0.8),
+                                    fontSize: 12,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white),
+                            onPressed: () => Navigator.of(ctx).pop(),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Body Content
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            const Text(
+                              'Pilih Metode Cetak Barcode:',
+                              style: TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.bold,
+                                color: Color(0xFF1A2F5A),
+                              ),
+                            ),
+                            const SizedBox(height: 12),
+
+                            // Mode A: All items
+                            Container(
+                              decoration: BoxDecoration(
+                                color: printMode == 'all'
+                                    ? const Color(0xFF1A2F5A).withOpacity(0.06)
+                                    : Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: printMode == 'all'
+                                      ? const Color(0xFF1A2F5A)
+                                      : Colors.grey.shade300,
+                                  width: printMode == 'all' ? 1.8 : 1,
+                                ),
+                              ),
+                              child: RadioListTile<String>(
+                                value: 'all',
+                                groupValue: printMode,
+                                activeColor: const Color(0xFF1A2F5A),
+                                onChanged: (val) {
+                                  setDialogState(() {
+                                    printMode = val!;
+                                  });
+                                },
+                                title: const Text(
+                                  'Semua Barcode Barang',
+                                  style: TextStyle(
+                                      fontWeight: FontWeight.bold,
+                                      fontSize: 14),
+                                ),
+                                subtitle: Text(
+                                  'Cetak seluruh ${_room.items.length} barang di ruangan ini (Nomor 1 - ${_room.items.length})',
+                                  style: const TextStyle(
+                                      fontSize: 12, color: Color(0xFF666666)),
+                                ),
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Mode B: Range input (Word-like, 1-5)
+                            Container(
+                              decoration: BoxDecoration(
+                                color: printMode == 'range'
+                                    ? const Color(0xFF1A2F5A).withOpacity(0.06)
+                                    : Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: printMode == 'range'
+                                      ? const Color(0xFF1A2F5A)
+                                      : Colors.grey.shade300,
+                                  width: printMode == 'range' ? 1.8 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  RadioListTile<String>(
+                                    value: 'range',
+                                    groupValue: printMode,
+                                    activeColor: const Color(0xFF1A2F5A),
+                                    onChanged: (val) {
+                                      setDialogState(() {
+                                        printMode = val!;
+                                      });
+                                    },
+                                    title: const Text(
+                                      'Rentang Nomor (Seperti Print Word)',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14),
+                                    ),
+                                    subtitle: const Text(
+                                      'Cetak berdasarkan rentang nomor urut barang, misal: 1-5 atau 1, 3, 5-8',
+                                      style: TextStyle(
+                                          fontSize: 12, color: Color(0xFF666666)),
+                                    ),
+                                  ),
+                                  if (printMode == 'range')
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 48, right: 16, bottom: 14),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          TextField(
+                                            controller: rangeController,
+                                            onChanged: (_) =>
+                                                setDialogState(() {}),
+                                            decoration: InputDecoration(
+                                              hintText:
+                                                  'Contoh: 1-5 atau 1, 3, 5-8',
+                                              isDense: true,
+                                              contentPadding:
+                                                  const EdgeInsets.symmetric(
+                                                      horizontal: 12,
+                                                      vertical: 10),
+                                              border: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: const BorderSide(
+                                                    color: Color(0xFF1A2F5A)),
+                                              ),
+                                              focusedBorder: OutlineInputBorder(
+                                                borderRadius:
+                                                    BorderRadius.circular(8),
+                                                borderSide: const BorderSide(
+                                                    color: Color(0xFF1A2F5A),
+                                                    width: 2),
+                                              ),
+                                              suffixIcon: IconButton(
+                                                icon: const Icon(Icons.clear,
+                                                    size: 18),
+                                                onPressed: () {
+                                                  rangeController.clear();
+                                                  setDialogState(() {});
+                                                },
+                                              ),
+                                            ),
+                                          ),
+                                          const SizedBox(height: 6),
+                                          Text(
+                                            'Petunjuk: Masukkan nomor 1 s/d ${_room.items.length}. Gunakan tanda hubung (-) untuk rentang dan koma (,) untuk memisahkan.',
+                                            style: TextStyle(
+                                                fontSize: 11,
+                                                color: Colors.grey.shade700,
+                                                fontStyle: FontStyle.italic),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 10),
+
+                            // Mode C: Manual checklist
+                            Container(
+                              decoration: BoxDecoration(
+                                color: printMode == 'manual'
+                                    ? const Color(0xFF1A2F5A).withOpacity(0.06)
+                                    : Colors.grey.shade50,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: printMode == 'manual'
+                                      ? const Color(0xFF1A2F5A)
+                                      : Colors.grey.shade300,
+                                  width: printMode == 'manual' ? 1.8 : 1,
+                                ),
+                              ),
+                              child: Column(
+                                children: [
+                                  RadioListTile<String>(
+                                    value: 'manual',
+                                    groupValue: printMode,
+                                    activeColor: const Color(0xFF1A2F5A),
+                                    onChanged: (val) {
+                                      setDialogState(() {
+                                        printMode = val!;
+                                      });
+                                    },
+                                    title: const Text(
+                                      'Pilih Manual (Centang List)',
+                                      style: TextStyle(
+                                          fontWeight: FontWeight.bold,
+                                          fontSize: 14),
+                                    ),
+                                    subtitle: const Text(
+                                      'Centang barang secara spesifik satu per satu',
+                                      style: TextStyle(
+                                          fontSize: 12, color: Color(0xFF666666)),
+                                    ),
+                                  ),
+                                  if (printMode == 'manual')
+                                    Padding(
+                                      padding: const EdgeInsets.only(
+                                          left: 16, right: 16, bottom: 14),
+                                      child: Column(
+                                        crossAxisAlignment:
+                                            CrossAxisAlignment.start,
+                                        children: [
+                                          Row(
+                                            mainAxisAlignment:
+                                                MainAxisAlignment.spaceBetween,
+                                            children: [
+                                              TextButton.icon(
+                                                onPressed: () {
+                                                  setDialogState(() {
+                                                    selectedIndices =
+                                                        Set<int>.from(
+                                                      List.generate(
+                                                          _room.items.length,
+                                                          (i) => i),
+                                                    );
+                                                  });
+                                                },
+                                                icon: const Icon(
+                                                    Icons.select_all,
+                                                    size: 16),
+                                                label: const Text(
+                                                    'Centang Semua',
+                                                    style: TextStyle(
+                                                        fontSize: 12)),
+                                              ),
+                                              TextButton.icon(
+                                                onPressed: () {
+                                                  setDialogState(() {
+                                                    selectedIndices.clear();
+                                                  });
+                                                },
+                                                icon: const Icon(Icons.deselect,
+                                                    size: 16),
+                                                label: const Text(
+                                                    'Hapus Semua Centang',
+                                                    style: TextStyle(
+                                                        fontSize: 12)),
+                                              ),
+                                            ],
+                                          ),
+                                          const SizedBox(height: 4),
+                                          Container(
+                                            height: 180,
+                                            decoration: BoxDecoration(
+                                              color: Colors.white,
+                                              borderRadius:
+                                                  BorderRadius.circular(8),
+                                              border: Border.all(
+                                                  color: Colors.grey.shade300),
+                                            ),
+                                            child: ListView.builder(
+                                              itemCount: _room.items.length,
+                                              itemBuilder: (lCtx, index) {
+                                                final item = _room.items[index];
+                                                final isChecked =
+                                                    selectedIndices
+                                                        .contains(index);
+                                                return CheckboxListTile(
+                                                  value: isChecked,
+                                                  dense: true,
+                                                  activeColor:
+                                                      const Color(0xFF1A2F5A),
+                                                  onChanged: (checked) {
+                                                    setDialogState(() {
+                                                      if (checked == true) {
+                                                        selectedIndices
+                                                            .add(index);
+                                                      } else {
+                                                        selectedIndices
+                                                            .remove(index);
+                                                      }
+                                                    });
+                                                  },
+                                                  title: Text(
+                                                    '#${index + 1}. ${item.jenisBarang}',
+                                                    style: const TextStyle(
+                                                      fontWeight:
+                                                          FontWeight.w600,
+                                                      fontSize: 13,
+                                                    ),
+                                                  ),
+                                                  subtitle: Text(
+                                                    'Kode: ${item.kodeBarang}${item.merekModel.isNotEmpty ? ' | ${item.merekModel}' : ''}',
+                                                    style: const TextStyle(
+                                                        fontSize: 11),
+                                                  ),
+                                                );
+                                              },
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                ],
+                              ),
+                            ),
+                            const SizedBox(height: 16),
+
+                            // Live Selected Summary Card
+                            Container(
+                              padding: const EdgeInsets.all(12),
+                              decoration: BoxDecoration(
+                                color:
+                                    const Color(0xFFCFA836).withOpacity(0.12),
+                                borderRadius: BorderRadius.circular(10),
+                                border: Border.all(
+                                    color: const Color(0xFFCFA836)
+                                        .withOpacity(0.4)),
+                              ),
+                              child: Row(
+                                children: [
+                                  const Icon(Icons.info_outline,
+                                      color: Color(0xFF8C6D15), size: 20),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      selectedItems.isEmpty
+                                          ? 'Belum ada barang yang terpilih untuk dicetak'
+                                          : 'Akan mencetak ${selectedItems.length} label barcode barang.',
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                        color: Color(0xFF5A4408),
+                                        fontSize: 13,
+                                      ),
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+
+                    // Dialog Footer / Buttons
+                    Container(
+                      padding: const EdgeInsets.all(16),
+                      decoration: BoxDecoration(
+                        color: Colors.grey.shade100,
+                        borderRadius: const BorderRadius.only(
+                          bottomLeft: Radius.circular(20),
+                          bottomRight: Radius.circular(20),
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.end,
+                        children: [
+                          OutlinedButton(
+                            onPressed: () => Navigator.of(ctx).pop(),
+                            style: OutlinedButton.styleFrom(
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 16, vertical: 12),
+                            ),
+                            child: const Text('Batal'),
+                          ),
+                          const SizedBox(width: 12),
+                          ElevatedButton.icon(
+                            onPressed: selectedItems.isEmpty
+                                ? null
+                                : () async {
+                                    Navigator.of(ctx).pop();
+                                    await printMultipleItemsLabelImpl(
+                                        selectedItems, _room);
+                                  },
+                            icon: const Icon(Icons.print_rounded, size: 18),
+                            label: Text(
+                              selectedItems.isEmpty
+                                  ? 'Cetak Barcode'
+                                  : 'Cetak (${selectedItems.length} Barcode)',
+                              style:
+                                  const TextStyle(fontWeight: FontWeight.bold),
+                            ),
+                            style: ElevatedButton.styleFrom(
+                              backgroundColor: const Color(0xFF1A2F5A),
+                              foregroundColor: Colors.white,
+                              shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(10)),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 20, vertical: 12),
+                              elevation: 2,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            );
+          },
+        );
+      },
+    );
+  }
+
   final ScrollController _scrollController = ScrollController();
   String _itemSearchQuery = '';
 
@@ -4806,6 +5337,18 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                         fontWeight: FontWeight.bold),
                   ),
                 ),
+                const SizedBox(height: 4),
+                TextButton.icon(
+                  onPressed: () => _showPrintItemsDialog(),
+                  icon: const Icon(Icons.print_rounded, size: 14, color: Color(0xFF1A2F5A)),
+                  label: const Text(
+                    'Cetak Barcode Barang (Multi/Rentang)',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Color(0xFF1A2F5A),
+                        fontWeight: FontWeight.bold),
+                  ),
+                ),
               ],
             ),
           ),
@@ -4910,9 +5453,30 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                   ],
                 ),
               ),
+              if (_room.items.isNotEmpty) ...[
+                const SizedBox(width: 12),
+                ElevatedButton.icon(
+                  onPressed: () => _showPrintItemsDialog(),
+                  icon: const Icon(Icons.print_rounded, size: 16),
+                  label: const Text(
+                    'Cetak Barcode (Rentang/Multi)',
+                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                  ),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1A2F5A),
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    elevation: 2,
+                  ),
+                ),
+              ],
             ],
           ),
         ),
+
         const SizedBox(height: 12),
 
         // Search bar untuk barang
