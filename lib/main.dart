@@ -1218,7 +1218,7 @@ class _LoginScreenState extends State<LoginScreen>
                                             .toString()
                                             .toLowerCase();
                                         allowedList.addAll(raw
-                                            .split(RegExp(r'[,\n]'))
+                                            .split(RegExp(r'[,\r\n]+'))
                                             .map((e) => e.trim())
                                             .where((e) => e.isNotEmpty));
                                       }
@@ -1267,7 +1267,7 @@ class _LoginScreenState extends State<LoginScreen>
                                   setDlg(() {
                                     isLoading = false;
                                     dialogError =
-                                        'Gagal mengirim OTP. Periksa koneksi Anda.';
+                                        'Gagal mengirim OTP ke $email: ${e.toString()}';
                                   });
                                 }
                               },
@@ -2935,20 +2935,59 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                     if (isSupabaseConfigured &&
                                         pendingNewValue != null) {
                                       if (pendingActionType == 'superadmin') {
+                                        final newSuper =
+                                            pendingNewValue!.trim().toLowerCase();
                                         await Supabase.instance.client
                                             .from('admin_settings')
                                             .upsert({
                                           'key': 'superadmin_email',
-                                          'value': pendingNewValue
+                                          'value': newSuper
                                         });
-                                      } else if (pendingActionType ==
-                                          'allowed_emails') {
+
+                                        // Tambahkan superadmin baru ke allowed_emails
+                                        allowedEmailsCtrl.text =
+                                            '${allowedEmailsCtrl.text}, $newSuper';
+                                        final cleanAllowed = allowedEmailsCtrl
+                                            .text
+                                            .split(RegExp(r'[,\r\n]+'))
+                                            .map((e) => e.trim().toLowerCase())
+                                            .where((e) => e.isNotEmpty)
+                                            .toSet()
+                                            .join(', ');
+
                                         await Supabase.instance.client
                                             .from('admin_settings')
                                             .upsert({
                                           'key': 'allowed_emails',
-                                          'value': pendingNewValue
+                                          'value': cleanAllowed
                                         });
+                                      } else if (pendingActionType ==
+                                          'allowed_emails') {
+                                        final cleanAllowed = pendingNewValue!
+                                            .split(RegExp(r'[,\r\n]+'))
+                                            .map((e) => e.trim().toLowerCase())
+                                            .where((e) => e.isNotEmpty)
+                                            .toSet()
+                                            .join(', ');
+
+                                        await Supabase.instance.client
+                                            .from('admin_settings')
+                                            .upsert({
+                                          'key': 'allowed_emails',
+                                          'value': cleanAllowed
+                                        });
+
+                                        if (cleanAllowed.isNotEmpty) {
+                                          await Supabase.instance.client
+                                              .from('admin_settings')
+                                              .upsert({
+                                            'key': 'admin_email',
+                                            'value': cleanAllowed
+                                                .split(',')
+                                                .first
+                                                .trim()
+                                          });
+                                        }
                                       }
                                     }
 
