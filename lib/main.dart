@@ -1038,12 +1038,8 @@ class _LoginScreenState extends State<LoginScreen>
       _errorMessage = null;
     });
     final entered = _passwordController.text.trim();
-    // Cek password default
-    if (entered == 'admin') {
-      widget.onLoginSuccess();
-      return;
-    }
-    // Cek custom password yang disimpan di Supabase
+
+    // Cek apakah sudah ada custom password di Supabase
     if (isSupabaseConfigured) {
       try {
         final res = await Supabase.instance.client
@@ -1051,17 +1047,39 @@ class _LoginScreenState extends State<LoginScreen>
             .select('value')
             .eq('key', 'admin_password')
             .maybeSingle();
-        if (res != null && res['value'] == entered) {
-          widget.onLoginSuccess();
-          return;
+
+        if (res != null) {
+          // Custom password sudah diset — hanya custom password yang berlaku
+          // Password default 'admin' dinonaktifkan
+          if (res['value'] == entered) {
+            widget.onLoginSuccess();
+            return;
+          } else {
+            setState(() {
+              _isLoggingIn = false;
+              _errorMessage = 'Password salah! Silakan coba lagi.';
+            });
+            return;
+          }
         }
-      } catch (_) {}
+        // Tidak ada custom password → izinkan password default 'admin'
+      } catch (_) {
+        // Jika Supabase error, izinkan password default sebagai fallback
+      }
     }
+
+    // Fallback: cek password default 'admin'
+    if (entered == 'admin') {
+      widget.onLoginSuccess();
+      return;
+    }
+
     setState(() {
       _isLoggingIn = false;
       _errorMessage = 'Password salah! Silakan coba lagi.';
     });
   }
+
 
   // ── Forgot Password Flow ────────────────────────────────────────────────
   void _showForgotPasswordDialog() {
