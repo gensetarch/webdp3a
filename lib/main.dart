@@ -1205,7 +1205,7 @@ class _LoginScreenState extends State<LoginScreen>
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Kode 6 digit telah dikirim ke\n${savedEmail ?? ''}',
+                  'Kode OTP telah dikirim ke\n${savedEmail ?? ''}\nMasukkan semua digit yang diterima.',
                   style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                 ),
                 const SizedBox(height: 20),
