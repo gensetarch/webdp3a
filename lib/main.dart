@@ -2298,11 +2298,12 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
   // ── Admin Settings Dialog (Opsi 1: Superadmin, Opsi 2: Email Akses OTP, Opsi 3: Password) ──
   void _showAdminSettingsDialog() async {
     final superadminEmailCtrl = TextEditingController();
-    final allowedEmailsCtrl = TextEditingController();
+    final newEmailCtrl = TextEditingController(); // Hanya untuk email BARU
     final passCtrl = TextEditingController();
     final superadminOtpCtrl = TextEditingController();
 
     String currentSuperadminEmail = 'bayubabayo780@gmail.com';
+    List<String> existingEmails = []; // Daftar email yang sudah terdaftar
     int selectedTab = 0; // 0=Email Akses OTP, 1=Ganti Superadmin, 2=Ganti Password
     int step = 0; // 0=Form Edit, 1=Verifikasi OTP Superadmin
     bool isSaving = false;
@@ -2325,15 +2326,20 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
             currentSuperadminEmail = row['value'].toString();
           }
           if (row['key'] == 'allowed_emails' && row['value'] != null) {
-            allowedEmailsCtrl.text = row['value'].toString();
+            final raw = row['value'].toString();
+            existingEmails = raw
+                .split(RegExp(r'[,\r\n]+'))
+                .map((e) => e.trim().toLowerCase())
+                .where((e) => e.isNotEmpty)
+                .toList();
           }
         }
       } catch (_) {}
     }
 
     superadminEmailCtrl.text = currentSuperadminEmail;
-    if (allowedEmailsCtrl.text.isEmpty) {
-      allowedEmailsCtrl.text = currentSuperadminEmail;
+    if (existingEmails.isEmpty) {
+      existingEmails = [currentSuperadminEmail];
     }
 
     if (!mounted) return;
@@ -2477,8 +2483,68 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
 
                   // TAB 0: KELOLA EMAIL AKSES OTP (MULTI-EMAIL)
                   if (selectedTab == 0) ...[
+                    // Daftar email terdaftar
                     const Text(
-                      'Daftar Email yang Memiliki Akses OTP',
+                      'Email yang Sudah Terdaftar',
+                      style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: Color(0xFF1A2F5A)),
+                    ),
+                    const SizedBox(height: 6),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFF8FAFC),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: const Color(0xFFD0D8E8)),
+                      ),
+                      child: existingEmails.isEmpty
+                          ? Text(
+                              'Belum ada email terdaftar.',
+                              style: TextStyle(fontSize: 11.5, color: Colors.grey[500]),
+                            )
+                          : Wrap(
+                              spacing: 6,
+                              runSpacing: 6,
+                              children: existingEmails
+                                  .map((email) => Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 10, vertical: 5),
+                                        decoration: BoxDecoration(
+                                          color: const Color(0xFF1A2F5A).withOpacity(0.08),
+                                          borderRadius: BorderRadius.circular(20),
+                                          border: Border.all(
+                                              color: const Color(0xFF1A2F5A)
+                                                  .withOpacity(0.2)),
+                                        ),
+                                        child: Row(
+                                          mainAxisSize: MainAxisSize.min,
+                                          children: [
+                                            const Icon(
+                                                Icons.mark_email_read_outlined,
+                                                size: 13,
+                                                color: Color(0xFF1A2F5A)),
+                                            const SizedBox(width: 5),
+                                            Text(
+                                              email,
+                                              style: const TextStyle(
+                                                  fontSize: 11.5,
+                                                  color: Color(0xFF1A2F5A),
+                                                  fontWeight: FontWeight.w500),
+                                            ),
+                                          ],
+                                        ),
+                                      ))
+                                  .toList(),
+                            ),
+                    ),
+                    const SizedBox(height: 14),
+
+                    // Input email baru
+                    const Text(
+                      'Tambah Email Baru',
                       style: TextStyle(
                           fontSize: 13,
                           fontWeight: FontWeight.w700,
@@ -2486,21 +2552,17 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                     ),
                     const SizedBox(height: 4),
                     Text(
-                      'Masukkan email instansi / staf yang diizinkan menerima OTP saat lupa password. Pisahkan dengan koma atau baris baru.',
+                      'Masukkan email instansi / staf baru yang ingin diberikan akses OTP.',
                       style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
                     ),
-                    const SizedBox(height: 10),
+                    const SizedBox(height: 8),
                     TextField(
-                      controller: allowedEmailsCtrl,
-                      maxLines: 3,
-                      keyboardType: TextInputType.multiline,
+                      controller: newEmailCtrl,
+                      keyboardType: TextInputType.emailAddress,
                       decoration: InputDecoration(
-                        hintText:
-                            'admin1@sulselprov.go.id, admin2@sulselprov.go.id',
-                        prefixIcon: const Padding(
-                          padding: EdgeInsets.only(bottom: 36),
-                          child: Icon(Icons.mark_email_read_outlined, size: 20),
-                        ),
+                        hintText: 'staf.baru@instansi.go.id',
+                        prefixIcon: const Icon(Icons.add_circle_outline,
+                            size: 20, color: Color(0xFF1A2F5A)),
                         border: OutlineInputBorder(
                             borderRadius: BorderRadius.circular(10)),
                         focusedBorder: OutlineInputBorder(
@@ -2508,12 +2570,13 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                           borderSide: const BorderSide(
                               color: Color(0xFF1A2F5A), width: 1.5),
                         ),
-                        contentPadding: const EdgeInsets.all(12),
+                        contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 12, vertical: 12),
                       ),
                     ),
                     const SizedBox(height: 6),
                     Text(
-                      '⚠️ Perubahan daftar email membutuhkan persetujuan OTP dari Superadmin ($currentSuperadminEmail).',
+                      '⚠️ Penambahan email baru membutuhkan persetujuan OTP dari Superadmin ($currentSuperadminEmail).',
                       style: const TextStyle(
                           fontSize: 10.5, color: Color(0xFFB45309)),
                     ),
@@ -2645,20 +2708,31 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                     dialogError = null;
                                   });
 
-                                  // ── Opsi 1: Simpan Email Akses OTP ─────────
+                                  // ── Opsi 1: Tambah Email Akses OTP Baru ─────────
                                   if (selectedTab == 0) {
-                                    final allowedRaw =
-                                        allowedEmailsCtrl.text.trim();
-                                    if (allowedRaw.isEmpty) {
+                                    final newEmail = newEmailCtrl.text.trim().toLowerCase();
+                                    if (newEmail.isEmpty || !newEmail.contains('@')) {
                                       setDlg(() {
                                         isSaving = false;
                                         dialogError =
-                                            'Masukkan minimal 1 email akses OTP.';
+                                            'Masukkan email baru yang valid.';
                                       });
                                       return;
                                     }
+                                    if (existingEmails.contains(newEmail)) {
+                                      setDlg(() {
+                                        isSaving = false;
+                                        dialogError =
+                                            'Email ini sudah terdaftar dalam daftar akses OTP.';
+                                      });
+                                      return;
+                                    }
+
+                                    // Gabung email baru dengan yang sudah ada
+                                    final mergedEmails = [...existingEmails, newEmail];
+                                    final mergedStr = mergedEmails.join(', ');
                                     pendingActionType = 'allowed_emails';
-                                    pendingNewValue = allowedRaw;
+                                    pendingNewValue = mergedStr;
 
                                     try {
                                       // Kirim OTP Izin ke Superadmin saat ini
@@ -2968,13 +3042,13 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                             .map((e) => e.trim().toLowerCase())
                                             .where((e) => e.isNotEmpty)
                                             .toSet()
-                                            .join(', ');
+                                            .toList();
 
                                         await Supabase.instance.client
                                             .from('admin_settings')
                                             .upsert({
                                           'key': 'allowed_emails',
-                                          'value': cleanAllowed
+                                          'value': cleanAllowed.join(', ')
                                         });
 
                                         if (cleanAllowed.isNotEmpty) {
@@ -2982,12 +3056,15 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                               .from('admin_settings')
                                               .upsert({
                                             'key': 'admin_email',
-                                            'value': cleanAllowed
-                                                .split(',')
-                                                .first
-                                                .trim()
+                                            'value': cleanAllowed.first
                                           });
                                         }
+
+                                        // Update local existingEmails list
+                                        setDlg(() {
+                                          existingEmails = cleanAllowed;
+                                          newEmailCtrl.clear();
+                                        });
                                       }
                                     }
 
