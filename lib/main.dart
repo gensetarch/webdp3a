@@ -5243,16 +5243,25 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
           }
         }
 
-        return StatefulBuilder(
+            return StatefulBuilder(
           builder: (dialogContext, setDialogState) {
             final selectedItems = getSelectedItems();
+            final screenW = MediaQuery.of(dialogContext).size.width;
+            final screenH = MediaQuery.of(dialogContext).size.height;
+            final isMobileDialog = screenW < 600;
 
             return Dialog(
+              insetPadding: EdgeInsets.symmetric(
+                horizontal: isMobileDialog ? 12 : 40,
+                vertical: isMobileDialog ? 20 : 24,
+              ),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(20)),
               child: Container(
-                constraints:
-                    const BoxConstraints(maxWidth: 540, maxHeight: 680),
+                constraints: BoxConstraints(
+                  maxWidth: isMobileDialog ? screenW : 540,
+                  maxHeight: isMobileDialog ? screenH * 0.88 : 680,
+                ),
                 child: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
@@ -5508,44 +5517,91 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                                         crossAxisAlignment:
                                             CrossAxisAlignment.start,
                                         children: [
-                                          Row(
-                                            mainAxisAlignment:
-                                                MainAxisAlignment.spaceBetween,
-                                            children: [
-                                              TextButton.icon(
-                                                onPressed: () {
-                                                  setDialogState(() {
-                                                    selectedIndices =
-                                                        Set<int>.from(
-                                                      List.generate(
-                                                          _room.items.length,
-                                                          (i) => i),
-                                                    );
-                                                  });
-                                                },
-                                                icon: const Icon(
-                                                    Icons.select_all,
-                                                    size: 16),
-                                                label: const Text(
-                                                    'Centang Semua',
-                                                    style: TextStyle(
-                                                        fontSize: 12)),
-                                              ),
-                                              TextButton.icon(
-                                                onPressed: () {
-                                                  setDialogState(() {
-                                                    selectedIndices.clear();
-                                                  });
-                                                },
-                                                icon: const Icon(Icons.deselect,
-                                                    size: 16),
-                                                label: const Text(
-                                                    'Hapus Semua Centang',
-                                                    style: TextStyle(
-                                                        fontSize: 12)),
-                                              ),
-                                            ],
-                                          ),
+                                          // Centang Semua & Hapus — responsif
+                                          isMobileDialog
+                                              ? Column(
+                                                  crossAxisAlignment:
+                                                      CrossAxisAlignment.stretch,
+                                                  children: [
+                                                    TextButton.icon(
+                                                      onPressed: () {
+                                                        setDialogState(() {
+                                                          selectedIndices =
+                                                              Set<int>.from(
+                                                            List.generate(
+                                                                _room.items
+                                                                    .length,
+                                                                (i) => i),
+                                                          );
+                                                        });
+                                                      },
+                                                      icon: const Icon(
+                                                          Icons.select_all,
+                                                          size: 16),
+                                                      label: const Text(
+                                                          'Centang Semua',
+                                                          style: TextStyle(
+                                                              fontSize: 12)),
+                                                    ),
+                                                    TextButton.icon(
+                                                      onPressed: () {
+                                                        setDialogState(() {
+                                                          selectedIndices
+                                                              .clear();
+                                                        });
+                                                      },
+                                                      icon: const Icon(
+                                                          Icons.deselect,
+                                                          size: 16),
+                                                      label: const Text(
+                                                          'Hapus Semua Centang',
+                                                          style: TextStyle(
+                                                              fontSize: 12)),
+                                                    ),
+                                                  ],
+                                                )
+                                              : Row(
+                                                  mainAxisAlignment:
+                                                      MainAxisAlignment
+                                                          .spaceBetween,
+                                                  children: [
+                                                    TextButton.icon(
+                                                      onPressed: () {
+                                                        setDialogState(() {
+                                                          selectedIndices =
+                                                              Set<int>.from(
+                                                            List.generate(
+                                                                _room.items
+                                                                    .length,
+                                                                (i) => i),
+                                                          );
+                                                        });
+                                                      },
+                                                      icon: const Icon(
+                                                          Icons.select_all,
+                                                          size: 16),
+                                                      label: const Text(
+                                                          'Centang Semua',
+                                                          style: TextStyle(
+                                                              fontSize: 12)),
+                                                    ),
+                                                    TextButton.icon(
+                                                      onPressed: () {
+                                                        setDialogState(() {
+                                                          selectedIndices
+                                                              .clear();
+                                                        });
+                                                      },
+                                                      icon: const Icon(
+                                                          Icons.deselect,
+                                                          size: 16),
+                                                      label: const Text(
+                                                          'Hapus Semua Centang',
+                                                          style: TextStyle(
+                                                              fontSize: 12)),
+                                                    ),
+                                                  ],
+                                                ),
                                           const SizedBox(height: 4),
                                           Container(
                                             height: 180,
@@ -5650,48 +5706,99 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                           bottomRight: Radius.circular(20),
                         ),
                       ),
-                      child: Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: [
-                          OutlinedButton(
-                            onPressed: () => Navigator.of(ctx).pop(),
-                            style: OutlinedButton.styleFrom(
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 16, vertical: 12),
+                      child: isMobileDialog
+                          // Mobile: full-width stacked buttons
+                          ? Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                ElevatedButton.icon(
+                                  onPressed: selectedItems.isEmpty
+                                      ? null
+                                      : () async {
+                                          Navigator.of(ctx).pop();
+                                          await printMultipleItemsLabelImpl(
+                                              selectedItems, _room);
+                                        },
+                                  icon: const Icon(Icons.print_rounded,
+                                      size: 18),
+                                  label: Text(
+                                    selectedItems.isEmpty
+                                        ? 'Cetak Barcode'
+                                        : 'Cetak (${selectedItems.length} Barcode)',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF1A2F5A),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 14),
+                                    elevation: 2,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                OutlinedButton(
+                                  onPressed: () => Navigator.of(ctx).pop(),
+                                  style: OutlinedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 12),
+                                  ),
+                                  child: const Text('Batal'),
+                                ),
+                              ],
+                            )
+                          // Desktop: side-by-side buttons
+                          : Row(
+                              mainAxisAlignment: MainAxisAlignment.end,
+                              children: [
+                                OutlinedButton(
+                                  onPressed: () => Navigator.of(ctx).pop(),
+                                  style: OutlinedButton.styleFrom(
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 16, vertical: 12),
+                                  ),
+                                  child: const Text('Batal'),
+                                ),
+                                const SizedBox(width: 12),
+                                ElevatedButton.icon(
+                                  onPressed: selectedItems.isEmpty
+                                      ? null
+                                      : () async {
+                                          Navigator.of(ctx).pop();
+                                          await printMultipleItemsLabelImpl(
+                                              selectedItems, _room);
+                                        },
+                                  icon: const Icon(Icons.print_rounded,
+                                      size: 18),
+                                  label: Text(
+                                    selectedItems.isEmpty
+                                        ? 'Cetak Barcode'
+                                        : 'Cetak (${selectedItems.length} Barcode)',
+                                    style: const TextStyle(
+                                        fontWeight: FontWeight.bold),
+                                  ),
+                                  style: ElevatedButton.styleFrom(
+                                    backgroundColor: const Color(0xFF1A2F5A),
+                                    foregroundColor: Colors.white,
+                                    shape: RoundedRectangleBorder(
+                                        borderRadius:
+                                            BorderRadius.circular(10)),
+                                    padding: const EdgeInsets.symmetric(
+                                        horizontal: 20, vertical: 12),
+                                    elevation: 2,
+                                  ),
+                                ),
+                              ],
                             ),
-                            child: const Text('Batal'),
-                          ),
-                          const SizedBox(width: 12),
-                          ElevatedButton.icon(
-                            onPressed: selectedItems.isEmpty
-                                ? null
-                                : () async {
-                                    Navigator.of(ctx).pop();
-                                    await printMultipleItemsLabelImpl(
-                                        selectedItems, _room);
-                                  },
-                            icon: const Icon(Icons.print_rounded, size: 18),
-                            label: Text(
-                              selectedItems.isEmpty
-                                  ? 'Cetak Barcode'
-                                  : 'Cetak (${selectedItems.length} Barcode)',
-                              style:
-                                  const TextStyle(fontWeight: FontWeight.bold),
-                            ),
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: const Color(0xFF1A2F5A),
-                              foregroundColor: Colors.white,
-                              shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(10)),
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 20, vertical: 12),
-                              elevation: 2,
-                            ),
-                          ),
-                        ],
-                      ),
                     ),
                   ],
                 ),
@@ -6889,7 +6996,7 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Container(
-          padding: const EdgeInsets.all(20),
+          padding: const EdgeInsets.all(16),
           width: double.infinity,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.92),
@@ -6903,23 +7010,21 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
               ),
             ],
           ),
-          child: Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Expanded(
-                child: Column(
+          child: isMobile
+              // ── Mobile: Column layout ──────────────────────────────
+              ? Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Row(
                       children: [
                         const Icon(Icons.inventory_2_outlined,
-                            color: Color(0xFF1A2F5A), size: 24),
+                            color: Color(0xFF1A2F5A), size: 20),
                         const SizedBox(width: 8),
                         const Expanded(
                           child: Text(
                             'Daftar Barang',
                             style: TextStyle(
-                                fontSize: 22,
+                                fontSize: 18,
                                 fontWeight: FontWeight.w900,
                                 color: Color(0xFF1A2F5A)),
                           ),
@@ -6933,34 +7038,95 @@ class _RoomDetailsScreenState extends State<RoomDetailsScreen> {
                           : 'Ditemukan ${filteredItems.length} dari ${_room.items.length} barang',
                       style: const TextStyle(
                           color: Color(0xFF4A5568),
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: FontWeight.w600),
                     ),
+                    if (_room.items.isNotEmpty) ...[
+                      const SizedBox(height: 10),
+                      SizedBox(
+                        width: double.infinity,
+                        child: ElevatedButton.icon(
+                          onPressed: () => _showPrintItemsDialog(),
+                          icon: const Icon(Icons.print_rounded, size: 15),
+                          label: const Text(
+                            'Cetak Barcode (Rentang/Multi)',
+                            style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                          ),
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: const Color(0xFF1A2F5A),
+                            foregroundColor: Colors.white,
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 10),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            elevation: 2,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
+                )
+              // ── Desktop/Tablet: Row layout ─────────────────────────
+              : Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(Icons.inventory_2_outlined,
+                                  color: Color(0xFF1A2F5A), size: 24),
+                              const SizedBox(width: 8),
+                              const Expanded(
+                                child: Text(
+                                  'Daftar Barang',
+                                  style: TextStyle(
+                                      fontSize: 22,
+                                      fontWeight: FontWeight.w900,
+                                      color: Color(0xFF1A2F5A)),
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            _itemSearchQuery.isEmpty
+                                ? 'Menampilkan ${_room.items.length} barang terdaftar'
+                                : 'Ditemukan ${filteredItems.length} dari ${_room.items.length} barang',
+                            style: const TextStyle(
+                                color: Color(0xFF4A5568),
+                                fontSize: 13,
+                                fontWeight: FontWeight.w600),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (_room.items.isNotEmpty) ...[
+                      const SizedBox(width: 12),
+                      ElevatedButton.icon(
+                        onPressed: () => _showPrintItemsDialog(),
+                        icon: const Icon(Icons.print_rounded, size: 16),
+                        label: const Text(
+                          'Cetak Barcode (Rentang/Multi)',
+                          style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
+                        ),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: const Color(0xFF1A2F5A),
+                          foregroundColor: Colors.white,
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 14, vertical: 12),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                          elevation: 2,
+                        ),
+                      ),
+                    ],
                   ],
                 ),
-              ),
-              if (_room.items.isNotEmpty) ...[
-                const SizedBox(width: 12),
-                ElevatedButton.icon(
-                  onPressed: () => _showPrintItemsDialog(),
-                  icon: const Icon(Icons.print_rounded, size: 16),
-                  label: const Text(
-                    'Cetak Barcode (Rentang/Multi)',
-                    style: TextStyle(fontSize: 12, fontWeight: FontWeight.bold),
-                  ),
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF1A2F5A),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                    elevation: 2,
-                  ),
-                ),
-              ],
-            ],
-          ),
         ),
 
         const SizedBox(height: 12),
