@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -3759,32 +3759,45 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
           Center(
             child: Container(
               constraints: const BoxConstraints(maxWidth: 1200),
-              padding: const EdgeInsets.all(20),
+              padding: EdgeInsets.all(MediaQuery.of(context).size.width < 600 ? 12 : 20),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   // Stats row
-                  Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                    decoration: BoxDecoration(
-                      color: Colors.white.withOpacity(0.92),
-                      borderRadius: BorderRadius.circular(14),
-                      border: Border.all(color: Colors.white.withOpacity(0.6)),
-                      boxShadow: [
-                        BoxShadow(
-                          color: Colors.black.withOpacity(0.04),
-                          blurRadius: 12,
-                          offset: const Offset(0, 4),
+                  LayoutBuilder(
+                    builder: (context, constraints) {
+                      final isMobile = constraints.maxWidth < 600;
+                      final isSmallMobile = constraints.maxWidth < 380;
+                      final containerPadding = isMobile
+                          ? EdgeInsets.symmetric(horizontal: isSmallMobile ? 6 : 10, vertical: 10)
+                          : const EdgeInsets.symmetric(horizontal: 16, vertical: 14);
+                      final cardGap = isMobile ? (isSmallMobile ? 4.0 : 6.0) : 10.0;
+
+                      return Container(
+                        padding: containerPadding,
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.92),
+                          borderRadius: BorderRadius.circular(14),
+                          border: Border.all(color: Colors.white.withOpacity(0.6)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.04),
+                              blurRadius: 12,
+                              offset: const Offset(0, 4),
+                            ),
+                          ],
                         ),
-                      ],
-                    ),
-                    child: Row(
-                      children: [
-                        _StatCard(icon: Icons.domain_rounded, label: 'Total Instansi', value: '${agencies.length}', color: const Color(0xFF1A2F5A)),
-                        _StatCard(icon: Icons.meeting_room_rounded, label: 'Total Ruangan', value: '${agencies.fold<int>(0, (s, a) => s + a.rooms.length)}', color: const Color(0xFF2D7D46)),
-                        _StatCard(icon: Icons.inventory_2_rounded, label: 'Total Aset', value: '${agencies.fold<int>(0, (s, a) => a.rooms.fold<int>(s, (rs, r) => rs + r.items.length))}', color: const Color(0xFFC08000)),
-                      ],
-                    ),
+                        child: Row(
+                          children: [
+                            _StatCard(icon: Icons.domain_rounded, label: 'Total Instansi', value: '${agencies.length}', color: const Color(0xFF1A2F5A)),
+                            SizedBox(width: cardGap),
+                            _StatCard(icon: Icons.meeting_room_rounded, label: 'Total Ruangan', value: '${agencies.fold<int>(0, (s, a) => s + a.rooms.length)}', color: const Color(0xFF2D7D46)),
+                            SizedBox(width: cardGap),
+                            _StatCard(icon: Icons.inventory_2_rounded, label: 'Total Aset', value: '${agencies.fold<int>(0, (s, a) => a.rooms.fold<int>(s, (rs, r) => rs + r.items.length))}', color: const Color(0xFFC08000)),
+                          ],
+                        ),
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
 
@@ -4051,33 +4064,71 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Expanded(
-      child: Container(
-        padding: const EdgeInsets.all(16),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: const Color(0xFFEEF2F8)),
-        ),
-        child: Row(
-          children: [
-            Container(
-              padding: const EdgeInsets.all(10),
-              decoration: BoxDecoration(
-                color: color.withOpacity(0.08),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Icon(icon, color: color, size: 22),
+      child: LayoutBuilder(
+        builder: (context, constraints) {
+          final isCompact = constraints.maxWidth < 110;
+          final isVeryCompact = constraints.maxWidth < 85;
+
+          return Container(
+            padding: EdgeInsets.symmetric(
+              horizontal: isVeryCompact ? 4 : (isCompact ? 6 : 12),
+              vertical: isCompact ? 8 : 12,
             ),
-            const SizedBox(width: 14),
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: const Color(0xFFEEF2F8)),
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text(value, style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold, color: color)),
-                Text(label, style: const TextStyle(fontSize: 12, color: Color(0xFF6B7280))),
+                Container(
+                  padding: EdgeInsets.all(isCompact ? 6 : 8),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Icon(icon, color: color, size: isCompact ? 16 : 20),
+                ),
+                SizedBox(width: isCompact ? 6 : 10),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          value,
+                          style: TextStyle(
+                            fontSize: isCompact ? 17 : 20,
+                            fontWeight: FontWeight.bold,
+                            color: color,
+                          ),
+                        ),
+                      ),
+                      FittedBox(
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.centerLeft,
+                        child: Text(
+                          label,
+                          style: TextStyle(
+                            fontSize: isCompact ? 10 : 12,
+                            fontWeight: FontWeight.w500,
+                            color: const Color(0xFF6B7280),
+                          ),
+                          maxLines: 1,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
               ],
             ),
-          ],
-        ),
+          );
+        },
       ),
     );
   }
