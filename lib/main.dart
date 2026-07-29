@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -4023,7 +4023,8 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                       ),
                                     ),
                                   );
-                                    );
+                                },
+                              );
                                 },
                               ),
                   ),
@@ -5034,7 +5035,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                             ),
                                             const Spacer(),
                                             Row(
-                                              mainAxisAlignment: MainAxisAlignment.end,
                                               children: [
                                                 IconButton(
                                                   onPressed: () => _showEditRoomDialog(context, room),
@@ -5044,35 +5044,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                                   constraints: const BoxConstraints(),
                                                 ),
                                                 const SizedBox(width: 12),
-                                                IconButton(
-                                                  onPressed: () async {
-                                                    final confirm = await showDialog<bool>(
-                                                      context: context,
-                                                      builder: (ctx) => Dialog(
-                                                        shape: RoundedRectangleBorder(
-                                                            borderRadius: BorderRadius.circular(20)),
-                                                        child: Container(
-                                                          constraints: const BoxConstraints(maxWidth: 340),
-                                                          child: Column(
-                                                });
-                                              },
-                                              style: ElevatedButton.styleFrom(
-                                                backgroundColor: Colors.transparent,
-                                                foregroundColor: Colors.white,
-                                                shadowColor: Colors.transparent,
-                                                elevation: 0,
-                                              ),
-                                              child: const Text('Buka'),
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                    ],
-                                  ),
-                                ),
-                              );
-                            },
-                          );
+                                                 IconButton(
+                                                   onPressed: () async {
+                                                     final confirm = await showDialog<bool>(
+                                                       context: context,
+                                                       builder: (ctx) => AlertDialog(
+                                                         shape: RoundedRectangleBorder(
+                                                           borderRadius: BorderRadius.circular(20),
+                                                         ),
+                                                         title: const Text('Hapus Ruangan'),
+                                                         content: Text('Yakin ingin menghapus ruangan "${room.name}"?'),
+                                                         actions: [
+                                                           TextButton(
+                                                             onPressed: () => Navigator.pop(ctx, false),
+                                                             child: const Text('Batal'),
+                                                           ),
+                                                           ElevatedButton(
+                                                             onPressed: () => Navigator.pop(ctx, true),
+                                                             style: ElevatedButton.styleFrom(
+                                                               backgroundColor: Colors.red,
+                                                               foregroundColor: Colors.white,
+                                                             ),
+                                                             child: const Text('Hapus'),
+                                                           ),
+                                                         ],
+                                                       ),
+                                                     );
+                                                     if (confirm == true) {
+                                                       _deleteRoom(room);
+                                                     }
+                                                   },
+                                                   icon: const Icon(Icons.delete_outline, color: Colors.redAccent, size: 20),
+                                                   tooltip: 'Hapus Ruangan',
+                                                   padding: EdgeInsets.zero,
+                                                   constraints: const BoxConstraints(),
+                                                 ),
+                                                 const Spacer(),
+                                                 ElevatedButton(
+                                                   onPressed: () {
+                                                     Navigator.push(
+                                                       context,
+                                                       MaterialPageRoute(
+                                                         builder: (_) => RoomDetailsScreen(
+                                                           room: room,
+                                                           onRoomsChanged: widget.onRoomsChanged,
+                                                            allRooms: _localRooms,
+                                                         ),
+                                                       ),
+                                                     );
+                                                   },
+                                                   style: ElevatedButton.styleFrom(
+                                                     backgroundColor: const Color(0xFF1A2F5A),
+                                                     foregroundColor: Colors.white,
+                                                     shape: RoundedRectangleBorder(
+                                                       borderRadius: BorderRadius.circular(8),
+                                                     ),
+                                                     padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+                                                     textStyle: const TextStyle(fontSize: 13),
+                                                   ),
+                                                   child: const Text('Buka'),
+                                                 ),
+                                               ],
+                                             ),
+                                           ],
+                                         ),
+                                       ),
+                                    );
+                                  },
+                                );
+                              },
+                            );
                         }), // end Builder
                   ),
                 ],
