@@ -1,4 +1,4 @@
-﻿import 'dart:convert';
+import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -3793,11 +3793,11 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                         ),
                         child: Row(
                           children: [
-                            _StatCard(icon: Icons.domain_rounded, label: 'Total Instansi', value: '${agencies.length}', color: const Color(0xFF1A2F5A)),
+                            _StatCard(icon: Icons.domain_rounded, label: isMobile ? 'Instansi' : 'Total Instansi', value: "${agencies.length}", color: const Color(0xFF1A2F5A)),
                             SizedBox(width: cardGap),
-                            _StatCard(icon: Icons.meeting_room_rounded, label: 'Total Ruangan', value: '${agencies.fold<int>(0, (s, a) => s + a.rooms.length)}', color: const Color(0xFF2D7D46)),
+                            _StatCard(icon: Icons.meeting_room_rounded, label: isMobile ? 'Ruangan' : 'Total Ruangan', value: "${agencies.fold<int>(0, (s, a) => s + a.rooms.length)}", color: const Color(0xFF2D7D46)),
                             SizedBox(width: cardGap),
-                            _StatCard(icon: Icons.inventory_2_rounded, label: 'Total Aset', value: '${agencies.fold<int>(0, (s, a) => a.rooms.fold<int>(s, (rs, r) => rs + r.items.length))}', color: const Color(0xFFC08000)),
+                            _StatCard(icon: Icons.inventory_2_rounded, label: isMobile ? 'Aset' : 'Total Aset', value: "${agencies.fold<int>(0, (s, a) => a.rooms.fold<int>(s, (rs, r) => rs + r.items.length))}", color: const Color(0xFFC08000)),
                           ],
                         ),
                       );
@@ -4093,15 +4093,15 @@ class _StatCard extends StatelessWidget {
           final isCompact = cardWidth < 120;
 
           final padding = EdgeInsets.symmetric(
-            horizontal: isVeryCompact ? 4 : (isCompact ? 6 : 12),
+            horizontal: isVeryCompact ? 3 : (isCompact ? 6 : 10),
             vertical: isCompact ? 8 : 12,
           );
 
-          final iconPadding = isVeryCompact ? 4.0 : (isCompact ? 6.0 : 8.0);
+          final iconPadding = isVeryCompact ? 4.0 : (isCompact ? 5.0 : 8.0);
           final iconSize = isVeryCompact ? 14.0 : (isCompact ? 16.0 : 20.0);
-          final gap = isVeryCompact ? 4.0 : (isCompact ? 6.0 : 10.0);
-          final valueFontSize = isVeryCompact ? 15.0 : (isCompact ? 17.0 : 20.0);
-          final labelFontSize = isVeryCompact ? 9.0 : (isCompact ? 10.0 : 12.0);
+          final gap = isVeryCompact ? 3.0 : (isCompact ? 5.0 : 8.0);
+          final valueFontSize = isVeryCompact ? 16.0 : (isCompact ? 18.0 : 22.0);
+          final labelFontSize = isVeryCompact ? 10.0 : (isCompact ? 11.0 : 12.0);
 
           return Container(
             padding: padding,
@@ -4140,6 +4140,7 @@ class _StatCard extends StatelessWidget {
                           ),
                         ),
                       ),
+                      const SizedBox(height: 1),
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         alignment: Alignment.centerLeft,
@@ -4147,10 +4148,9 @@ class _StatCard extends StatelessWidget {
                           label,
                           style: TextStyle(
                             fontSize: labelFontSize,
-                            fontWeight: FontWeight.w500,
+                            fontWeight: FontWeight.w600,
                             color: const Color(0xFF6B7280),
                           ),
-                          maxLines: 1,
                         ),
                       ),
                     ],
