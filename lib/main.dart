@@ -4984,190 +4984,106 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                           Expanded(
                                             child: Column(
                                               crossAxisAlignment:
-                                                  CrossAxisAlignment.start,
+                            return LayoutBuilder(
+                              builder: (context, constraints) {
+                                final w = constraints.maxWidth;
+                                final crossAxisCount = w < 420
+                                    ? 1
+                                    : w < 700
+                                        ? 2
+                                        : (w / 380).floor().clamp(2, 4);
+                                final cardHeight = w < 420 ? 200.0 : 220.0;
+                                return GridView.builder(
+                                  gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                    crossAxisCount: crossAxisCount,
+                                    mainAxisExtent: cardHeight,
+                                    crossAxisSpacing: 16,
+                                    mainAxisSpacing: 16,
+                                  ),
+                                  itemCount: filteredRooms.length,
+                                  itemBuilder: (context, index) {
+                                    final room = filteredRooms[index];
+                                    return Card(
+                                      elevation: 0,
+                                      color: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(12),
+                                        side: BorderSide(color: Colors.grey[200]!),
+                                      ),
+                                      child: Padding(
+                                        padding: const EdgeInsets.all(18.0),
+                                        child: Column(
+                                          crossAxisAlignment: CrossAxisAlignment.start,
+                                          children: [
+                                            Row(
+                                              crossAxisAlignment: CrossAxisAlignment.start,
                                               children: [
-                                                Text(
-                                                  room.name,
-                                                  style: const TextStyle(
-                                                    fontSize: 18,
-                                                    fontWeight: FontWeight.bold,
-                                                    color: Color(0xFF111111),
+                                                Container(
+                                                  padding: const EdgeInsets.all(10),
+                                                  decoration: BoxDecoration(
+                                                    color: const Color(0xFF1A2F5A).withOpacity(0.08),
+                                                    borderRadius: BorderRadius.circular(10),
                                                   ),
-                                                  overflow: TextOverflow.ellipsis,
+                                                  child: const Icon(Icons.meeting_room_outlined, color: Color(0xFF1A2F5A), size: 22),
                                                 ),
-                                                Text(
-                                                  'Tahun ${room.year}',
-                                                  style: const TextStyle(
-                                                      color: Color(0xFF555555),
-                                                      fontSize: 13,
-                                                      fontWeight:
-                                                          FontWeight.w500),
+                                                const SizedBox(width: 12),
+                                                Expanded(
+                                                  child: Column(
+                                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                                    children: [
+                                                      Text(
+                                                        room.name,
+                                                        style: const TextStyle(fontSize: 15, fontWeight: FontWeight.bold, color: Color(0xFF111111)),
+                                                        overflow: TextOverflow.ellipsis,
+                                                      ),
+                                                      const SizedBox(height: 2),
+                                                      Text(
+                                                        room.barcode,
+                                                        style: const TextStyle(fontSize: 11, color: Color(0xFF9EB0C8)),
+                                                      ),
+                                                    ],
+                                                  ),
                                                 ),
                                               ],
                                             ),
-                                          ),
-                                          QRCodeWidget(
-                                              data: generateRoomUrl(room.id),
-                                              size: 55),
-                                        ],
-                                      ),
-                                      const Spacer(),
-                                      Container(
-                                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF1A2F5A).withOpacity(0.08),
-                                          borderRadius: BorderRadius.circular(8),
-                                        ),
-                                        child: Text(
-                                          'Jumlah Aset: ${room.items.length} barang',
-                                          style: const TextStyle(
-                                              fontSize: 12,
-                                              fontWeight: FontWeight.w700,
-                                              color: Color(0xFF1A2F5A)),
-                                        ),
-                                      ),
-                                      const SizedBox(height: 16),
-                                      Row(
-                                        mainAxisAlignment: MainAxisAlignment.end,
-                                        children: [
-                                          IconButton(
-                                            onPressed: () => _showEditRoomDialog(
-                                                context, room),
-                                            icon: const Icon(Icons.edit_outlined,
-                                                color: Color(0xFF1A2F5A)),
-                                            tooltip: 'Edit Ruangan',
-                                          ),
-                                          IconButton(
-                                            onPressed: () async {
-                                              final confirm = await showDialog<bool>(
-                                                context: context,
-                                                builder: (ctx) => Dialog(
-                                                  shape: RoundedRectangleBorder(
-                                                      borderRadius: BorderRadius.circular(20)),
-                                                  child: Container(
-                                                    constraints: const BoxConstraints(maxWidth: 340),
-                                                    child: Column(
-                                                      mainAxisSize: MainAxisSize.min,
-                                                      children: [
-                                                        // Header
-                                                        Container(
-                                                          width: double.infinity,
-                                                          padding: const EdgeInsets.all(18),
-                                                          decoration: const BoxDecoration(
-                                                            gradient: LinearGradient(
-                                                              colors: [Color(0xFF1A2F5A), Color(0xFF1E3A6E)],
-                                                            ),
-                                                            borderRadius: BorderRadius.only(
-                                                              topLeft: Radius.circular(20),
-                                                              topRight: Radius.circular(20),
-                                                            ),
-                                                          ),
-                                                          child: Row(
-                                                            children: [
-                                                              Container(
-                                                                padding: const EdgeInsets.all(6),
-                                                                decoration: BoxDecoration(
-                                                                  color: Colors.red.withOpacity(0.25),
-                                                                  borderRadius: BorderRadius.circular(8),
-                                                                ),
-                                                                child: const Icon(Icons.delete_outline_rounded,
-                                                                    color: Color(0xFFFF8A80), size: 18),
-                                                              ),
-                                                              const SizedBox(width: 10),
-                                                              const Text(
-                                                                'Hapus Ruangan?',
-                                                                style: TextStyle(
-                                                                  fontSize: 16,
-                                                                  fontWeight: FontWeight.bold,
-                                                                  color: Colors.white,
-                                                                ),
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                        // Content
-                                                        Padding(
-                                                          padding: const EdgeInsets.fromLTRB(20, 16, 20, 16),
-                                                          child: Column(
-                                                            crossAxisAlignment: CrossAxisAlignment.start,
-                                                            children: [
-                                                              Text(
-                                                                'Ruangan "${room.name}" beserta seluruh aset di dalamnya akan dihapus permanen dari sistem. Yakin?',
-                                                                style: const TextStyle(
-                                                                  fontSize: 13,
-                                                                  color: Color(0xFF4A5568),
-                                                                  height: 1.4,
-                                                                ),
-                                                              ),
-                                                              const SizedBox(height: 20),
-                                                              Row(
-                                                                mainAxisAlignment: MainAxisAlignment.end,
-                                                                children: [
-                                                                  OutlinedButton(
-                                                                    onPressed: () => Navigator.pop(ctx, false),
-                                                                    style: OutlinedButton.styleFrom(
-                                                                      side: const BorderSide(color: Color(0xFFD0D8E8)),
-                                                                      foregroundColor: const Color(0xFF4A5568),
-                                                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                                                    ),
-                                                                    child: const Text('Batal', style: TextStyle(fontWeight: FontWeight.w600)),
-                                                                  ),
-                                                                  const SizedBox(width: 10),
-                                                                  ElevatedButton.icon(
-                                                                    style: ElevatedButton.styleFrom(
-                                                                      backgroundColor: const Color(0xFFC0392B),
-                                                                      foregroundColor: Colors.white,
-                                                                      elevation: 0,
-                                                                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                                                                      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-                                                                    ),
-                                                                    onPressed: () => Navigator.pop(ctx, true),
-                                                                    icon: const Icon(Icons.delete_outline, size: 16),
-                                                                    label: const Text('Hapus', style: TextStyle(fontWeight: FontWeight.bold)),
-                                                                  ),
-                                                                ],
-                                                              ),
-                                                            ],
-                                                          ),
-                                                        ),
-                                                      ],
-                                                    ),
-                                                  ),
+                                            const SizedBox(height: 14),
+                                            Row(
+                                              children: [
+                                                _InfoChip(
+                                                  icon: Icons.inventory_2_outlined,
+                                                  label: '${room.items.length} Aset',
+                                                  color: const Color(0xFF2D7D46),
                                                 ),
-                                              );
-                                              if (confirm == true) _deleteRoom(room);
-                                            },
-                                            icon: const Icon(Icons.delete_outline,
-                                                color: Color(0xFFC0392B)),
-                                            tooltip: 'Hapus Ruangan',
-                                          ),
-                                          const SizedBox(width: 8),
-                                          Container(
-                                            decoration: BoxDecoration(
-                                              gradient: const LinearGradient(
-                                                colors: [Color(0xFF1A2F5A), Color(0xFF2D4A8A)],
-                                              ),
-                                              borderRadius: BorderRadius.circular(8),
+                                                const SizedBox(width: 8),
+                                                _InfoChip(
+                                                  icon: Icons.calendar_today_outlined,
+                                                  label: room.year,
+                                                  color: const Color(0xFF1A2F5A),
+                                                ),
+                                              ],
                                             ),
-                                            child: ElevatedButton(
-                                              onPressed: () {
-                                                saveToStorage('admin_current_room_id', room.id);
-                                                saveToSession('admin_current_room_id', room.id);
-                                                Navigator.push(
-                                                  context,
-                                                  MaterialPageRoute(
-                                                    builder: (context) =>
-                                                        RoomDetailsScreen(
-                                                      room: room,
-                                                      allRooms: rooms,
-                                                      agencyId: widget.agencyId,
-                                                      onRoomsChanged: onRoomsChanged,
-                                                    ),
-                                                  ),
-                                                ).then((_) {
-                                                  removeFromStorage('admin_current_room_id');
-                                                  removeFromSession('admin_current_room_id');
+                                            const Spacer(),
+                                            Row(
+                                              mainAxisAlignment: MainAxisAlignment.end,
+                                              children: [
+                                                IconButton(
+                                                  onPressed: () => _showEditRoomDialog(context, room),
+                                                  icon: const Icon(Icons.edit_outlined, color: Color(0xFF1A2F5A), size: 20),
+                                                  tooltip: 'Edit Ruangan',
+                                                  padding: EdgeInsets.zero,
+                                                  constraints: const BoxConstraints(),
+                                                ),
+                                                const SizedBox(width: 12),
+                                                IconButton(
+                                                  onPressed: () async {
+                                                    final confirm = await showDialog<bool>(
+                                                      context: context,
+                                                      builder: (ctx) => Dialog(
+                                                        shape: RoundedRectangleBorder(
+                                                            borderRadius: BorderRadius.circular(20)),
+                                                        child: Container(
+                                                          constraints: const BoxConstraints(maxWidth: 340),
+                                                          child: Column(
                                                 });
                                               },
                                               style: ElevatedButton.styleFrom(
