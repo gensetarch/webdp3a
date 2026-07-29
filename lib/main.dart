@@ -2299,16 +2299,14 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
   void _showAdminSettingsDialog() async {
     final superadminEmailCtrl = TextEditingController();
     final newEmailCtrl = TextEditingController(); // Hanya untuk email BARU
-    final passCtrl = TextEditingController();
     final superadminOtpCtrl = TextEditingController();
 
     String currentSuperadminEmail = 'bayubabayo780@gmail.com';
     List<String> existingEmails = []; // Daftar email yang sudah terdaftar
-    int selectedTab = 0; // 0=Email Akses OTP, 1=Ganti Superadmin, 2=Ganti Password
+    int selectedTab = 0; // 0=Email Akses OTP, 1=Ganti Superadmin
     int step = 0; // 0=Form Edit, 1=Verifikasi OTP Superadmin
     bool isSaving = false;
     String? dialogError;
-    bool obscurePass = true;
 
     String? pendingActionType; // 'superadmin' or 'allowed_emails'
     String? pendingNewValue;
@@ -2432,43 +2430,6 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                       ? FontWeight.bold
                                       : FontWeight.w500,
                                   color: selectedTab == 1
-                                      ? const Color(0xFF1A2F5A)
-                                      : Colors.grey[600],
-                                ),
-                              ),
-                            ),
-                          ),
-                        ),
-                        Expanded(
-                          child: InkWell(
-                            onTap: () => setDlg(() {
-                              selectedTab = 2;
-                              dialogError = null;
-                            }),
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(vertical: 8),
-                              decoration: BoxDecoration(
-                                color: selectedTab == 2
-                                    ? Colors.white
-                                    : Colors.transparent,
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: selectedTab == 2
-                                    ? [
-                                        BoxShadow(
-                                            color: Colors.black.withOpacity(0.05),
-                                            blurRadius: 4)
-                                      ]
-                                    : [],
-                              ),
-                              child: Text(
-                                '🔑 Password',
-                                textAlign: TextAlign.center,
-                                style: TextStyle(
-                                  fontSize: 11.5,
-                                  fontWeight: selectedTab == 2
-                                      ? FontWeight.bold
-                                      : FontWeight.w500,
-                                  color: selectedTab == 2
                                       ? const Color(0xFF1A2F5A)
                                       : Colors.grey[600],
                                 ),
@@ -2623,48 +2584,6 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                     ),
                   ],
 
-                  // TAB 2: GANTI PASSWORD ADMIN WEB
-                  if (selectedTab == 2) ...[
-                    const Text(
-                      'Kata Sandi Admin Web Baru',
-                      style: TextStyle(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w700,
-                          color: Color(0xFF1A2F5A)),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      'Ubah kata sandi utama yang digunakan untuk masuk ke Panel Admin web ini.',
-                      style: TextStyle(fontSize: 11.5, color: Colors.grey[600]),
-                    ),
-                    const SizedBox(height: 10),
-                    TextField(
-                      controller: passCtrl,
-                      obscureText: obscurePass,
-                      decoration: InputDecoration(
-                        hintText: 'Masukkan kata sandi admin baru',
-                        prefixIcon: const Icon(Icons.lock_outline, size: 20),
-                        suffixIcon: IconButton(
-                          icon: Icon(
-                            obscurePass
-                                ? Icons.visibility_outlined
-                                : Icons.visibility_off_outlined,
-                            size: 20,
-                          ),
-                          onPressed: () => setDlg(() => obscurePass = !obscurePass),
-                        ),
-                        border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(10)),
-                        focusedBorder: OutlineInputBorder(
-                          borderRadius: BorderRadius.circular(10),
-                          borderSide: const BorderSide(
-                              color: Color(0xFF1A2F5A), width: 1.5),
-                        ),
-                        contentPadding: const EdgeInsets.symmetric(
-                            horizontal: 12, vertical: 12),
-                      ),
-                    ),
-                  ],
 
                   if (dialogError != null) ...[
                     const SizedBox(height: 12),
@@ -2801,47 +2720,6 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                       });
                                     }
                                   }
-
-                                  // ── Opsi 3: Ganti Password ───────────────
-                                  else if (selectedTab == 2) {
-                                    final pass = passCtrl.text;
-                                    if (pass.length < 6) {
-                                      setDlg(() {
-                                        isSaving = false;
-                                        dialogError =
-                                            'Password minimal 6 karakter.';
-                                      });
-                                      return;
-                                    }
-
-                                    try {
-                                      if (isSupabaseConfigured) {
-                                        await Supabase.instance.client
-                                            .from('admin_settings')
-                                            .upsert({
-                                          'key': 'admin_password',
-                                          'value': pass
-                                        });
-                                      }
-                                      if (ctx.mounted) Navigator.pop(ctx);
-                                      if (mounted) {
-                                        ScaffoldMessenger.of(context)
-                                            .showSnackBar(
-                                          const SnackBar(
-                                            content: Text(
-                                                '✅ Kata sandi admin berhasil diperbarui!'),
-                                            backgroundColor: Color(0xFF1A7A4A),
-                                          ),
-                                        );
-                                      }
-                                    } catch (e) {
-                                      setDlg(() {
-                                        isSaving = false;
-                                        dialogError =
-                                            'Gagal menyimpan kata sandi: $e';
-                                      });
-                                    }
-                                  }
                                 },
                           style: ElevatedButton.styleFrom(
                             backgroundColor: const Color(0xFF1A2F5A),
@@ -2859,9 +2737,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                     color: Colors.white,
                                   ),
                                 )
-                              : Text(selectedTab == 2
-                                  ? 'Simpan Password'
-                                  : 'Lanjut OTP Izin'),
+                              : const Text('Lanjut OTP Izin'),
                         ),
                       ),
                     ],
