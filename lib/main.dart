@@ -4954,36 +4954,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                 ),
                               );
                             }
-                            return GridView.builder(
-                            gridDelegate:
-                                const SliverGridDelegateWithMaxCrossAxisExtent(
-                              maxCrossAxisExtent: 380,
-                              mainAxisExtent: 220,
-                              crossAxisSpacing: 20,
-                              mainAxisSpacing: 20,
-                            ),
-                            itemCount: filteredRooms.length,
-                            itemBuilder: (context, index) {
-                              final room = filteredRooms[index];
-                              return Card(
-                                elevation: 0,
-                                color: Colors.white,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(12),
-                                  side: BorderSide(color: Colors.grey[200]!),
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(16.0),
-                                  child: Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Row(
-                                        mainAxisAlignment:
-                                            MainAxisAlignment.spaceBetween,
-                                        children: [
-                                          Expanded(
-                                            child: Column(
-                                              crossAxisAlignment:
                             return LayoutBuilder(
                               builder: (context, constraints) {
                                 final w = constraints.maxWidth;
