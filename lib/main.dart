@@ -1,4 +1,4 @@
-import 'dart:convert';
+﻿import 'dart:convert';
 import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -3710,9 +3710,13 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
         ),
         backgroundColor: Colors.transparent,
         foregroundColor: Colors.white,
-        title: const Text(
-          'GenSeT Dashboard Admin',
-          style: TextStyle(fontWeight: FontWeight.bold),
+        title: const FittedBox(
+          fit: BoxFit.scaleDown,
+          alignment: Alignment.centerLeft,
+          child: Text(
+            'GenSeT Dashboard Admin',
+            style: TextStyle(fontWeight: FontWeight.bold),
+          ),
         ),
         actions: [
           IconButton(
@@ -3801,44 +3805,43 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                   ),
                   const SizedBox(height: 16),
 
-                  // Search + Add button row
-                  Row(
-                    children: [
-                      Expanded(
-                        child: Container(
-                          height: 44,
-                          decoration: BoxDecoration(
-                            color: Colors.white,
-                            borderRadius: BorderRadius.circular(10),
-                            border: Border.all(color: const Color(0xFFD0D8E8)),
-                            boxShadow: [
-                              BoxShadow(
-                                color: Colors.black.withOpacity(0.03),
-                                blurRadius: 8,
-                                offset: const Offset(0, 2),
-                              ),
-                            ],
-                          ),
-                          child: TextField(
-                            controller: _searchController,
-                            decoration: InputDecoration(
-                              hintText: 'Cari instansi...',
-                              hintStyle: const TextStyle(color: Color(0xFF9EB0C8), fontSize: 14),
-                              prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF1A2F5A), size: 20),
-                              suffixIcon: _searchQuery.isNotEmpty
-                                  ? IconButton(
-                                      icon: const Icon(Icons.close_rounded, color: Color(0xFF1A2F5A), size: 18),
-                                      onPressed: () => _searchController.clear(),
-                                    )
-                                  : null,
-                              border: InputBorder.none,
-                              contentPadding: const EdgeInsets.symmetric(vertical: 12),
+                  // Search + Add button row (Responsive)
+                  LayoutBuilder(
+                    builder: (context, searchConstraints) {
+                      final isNarrowSearch = searchConstraints.maxWidth < 520;
+                      final searchField = Container(
+                        height: 44,
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFD0D8E8)),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Colors.black.withOpacity(0.03),
+                              blurRadius: 8,
+                              offset: const Offset(0, 2),
                             ),
+                          ],
+                        ),
+                        child: TextField(
+                          controller: _searchController,
+                          decoration: InputDecoration(
+                            hintText: 'Cari instansi...',
+                            hintStyle: const TextStyle(color: Color(0xFF9EB0C8), fontSize: 14),
+                            prefixIcon: const Icon(Icons.search_rounded, color: Color(0xFF1A2F5A), size: 20),
+                            suffixIcon: _searchQuery.isNotEmpty
+                                ? IconButton(
+                                    icon: const Icon(Icons.close_rounded, color: Color(0xFF1A2F5A), size: 18),
+                                    onPressed: () => _searchController.clear(),
+                                  )
+                                : null,
+                            border: InputBorder.none,
+                            contentPadding: const EdgeInsets.symmetric(vertical: 12),
                           ),
                         ),
-                      ),
-                      const SizedBox(width: 12),
-                      ElevatedButton.icon(
+                      );
+
+                      final addButton = ElevatedButton.icon(
                         onPressed: _showAddAgencyDialog,
                         icon: const Icon(Icons.add, size: 18),
                         label: const Text('Tambah Instansi'),
@@ -3849,8 +3852,27 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                           padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12),
                           shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
                         ),
-                      ),
-                    ],
+                      );
+
+                      if (isNarrowSearch) {
+                        return Column(
+                          crossAxisAlignment: CrossAxisAlignment.stretch,
+                          children: [
+                            searchField,
+                            const SizedBox(height: 10),
+                            addButton,
+                          ],
+                        );
+                      }
+
+                      return Row(
+                        children: [
+                          Expanded(child: searchField),
+                          const SizedBox(width: 12),
+                          addButton,
+                        ],
+                      );
+                    },
                   ),
                   const SizedBox(height: 16),
 
@@ -3886,7 +3908,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                       : w < 700
                                           ? 2
                                           : (w / 380).floor().clamp(2, 4);
-                                  final cardHeight = w < 420 ? 200.0 : 230.0;
+                                  final cardHeight = w < 420 ? 230.0 : 240.0;
                                   return GridView.builder(
                                       gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                         crossAxisCount: crossAxisCount,
@@ -4066,14 +4088,23 @@ class _StatCard extends StatelessWidget {
     return Expanded(
       child: LayoutBuilder(
         builder: (context, constraints) {
-          final isCompact = constraints.maxWidth < 110;
-          final isVeryCompact = constraints.maxWidth < 85;
+          final cardWidth = constraints.maxWidth;
+          final isVeryCompact = cardWidth < 90;
+          final isCompact = cardWidth < 120;
+
+          final padding = EdgeInsets.symmetric(
+            horizontal: isVeryCompact ? 4 : (isCompact ? 6 : 12),
+            vertical: isCompact ? 8 : 12,
+          );
+
+          final iconPadding = isVeryCompact ? 4.0 : (isCompact ? 6.0 : 8.0);
+          final iconSize = isVeryCompact ? 14.0 : (isCompact ? 16.0 : 20.0);
+          final gap = isVeryCompact ? 4.0 : (isCompact ? 6.0 : 10.0);
+          final valueFontSize = isVeryCompact ? 15.0 : (isCompact ? 17.0 : 20.0);
+          final labelFontSize = isVeryCompact ? 9.0 : (isCompact ? 10.0 : 12.0);
 
           return Container(
-            padding: EdgeInsets.symmetric(
-              horizontal: isVeryCompact ? 4 : (isCompact ? 6 : 12),
-              vertical: isCompact ? 8 : 12,
-            ),
+            padding: padding,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(12),
@@ -4083,14 +4114,14 @@ class _StatCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Container(
-                  padding: EdgeInsets.all(isCompact ? 6 : 8),
+                  padding: EdgeInsets.all(iconPadding),
                   decoration: BoxDecoration(
                     color: color.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(8),
                   ),
-                  child: Icon(icon, color: color, size: isCompact ? 16 : 20),
+                  child: Icon(icon, color: color, size: iconSize),
                 ),
-                SizedBox(width: isCompact ? 6 : 10),
+                SizedBox(width: gap),
                 Expanded(
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -4103,7 +4134,7 @@ class _StatCard extends StatelessWidget {
                         child: Text(
                           value,
                           style: TextStyle(
-                            fontSize: isCompact ? 17 : 20,
+                            fontSize: valueFontSize,
                             fontWeight: FontWeight.bold,
                             color: color,
                           ),
@@ -4115,7 +4146,7 @@ class _StatCard extends StatelessWidget {
                         child: Text(
                           label,
                           style: TextStyle(
-                            fontSize: isCompact ? 10 : 12,
+                            fontSize: labelFontSize,
                             fontWeight: FontWeight.w500,
                             color: const Color(0xFF6B7280),
                           ),
@@ -4991,9 +5022,9 @@ class _DashboardScreenState extends State<DashboardScreen> {
                               return Center(
                                 child: Padding(
                                   padding: const EdgeInsets.all(32),
-                                  child: Column(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
+                                   child: Column(
+                                     mainAxisSize: MainAxisSize.min,
+                                     children: [
                                       Icon(Icons.search_off_rounded, size: 60, color: const Color(0xFF1A2F5A).withOpacity(0.2)),
                                       const SizedBox(height: 12),
                                       Text(
@@ -5014,7 +5045,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                                     : w < 700
                                         ? 2
                                         : (w / 380).floor().clamp(2, 4);
-                                final cardHeight = w < 420 ? 200.0 : 220.0;
+                                final cardHeight = w < 420 ? 220.0 : 235.0;
                                 return GridView.builder(
                                   gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
                                     crossAxisCount: crossAxisCount,
