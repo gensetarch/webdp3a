@@ -3156,41 +3156,83 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
               );
             }
 
-            return AlertDialog(
+            final screenW = MediaQuery.of(ctx).size.width;
+            final screenH = MediaQuery.of(ctx).size.height;
+            final isMobileDlg = screenW < 600;
+
+            return Dialog(
+              insetPadding: EdgeInsets.symmetric(
+                horizontal: isMobileDlg ? 12 : 40,
+                vertical: isMobileDlg ? 16 : 24,
+              ),
               shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(16)),
-              contentPadding: const EdgeInsets.all(24),
-              title: Row(
-                children: [
-                  Container(
-                    padding: const EdgeInsets.all(8),
-                    decoration: BoxDecoration(
-                      color: const Color(0xFF1A2F5A).withOpacity(0.08),
-                      borderRadius: BorderRadius.circular(8),
+              child: Container(
+                constraints: BoxConstraints(
+                  maxWidth: isMobileDlg ? screenW : 500,
+                  maxHeight: isMobileDlg ? screenH * 0.9 : 700,
+                ),
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // ── Header ─────────────────────────────────────
+                    Container(
+                      padding: const EdgeInsets.fromLTRB(20, 16, 12, 16),
+                      decoration: const BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [Color(0xFF1A2F5A), Color(0xFF1E3A6E)],
+                        ),
+                        borderRadius: BorderRadius.only(
+                          topLeft: Radius.circular(16),
+                          topRight: Radius.circular(16),
+                        ),
+                      ),
+                      child: Row(
+                        children: [
+                          Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: Colors.white.withOpacity(0.15),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Icon(
+                                step == 0
+                                    ? Icons.settings_outlined
+                                    : Icons.shield_outlined,
+                                color: Colors.white,
+                                size: 20),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            child: Text(
+                              step == 0
+                                  ? 'Pengaturan Admin & Akses OTP'
+                                  : 'Persetujuan Superadmin',
+                              style: const TextStyle(
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.close, color: Colors.white70, size: 20),
+                            onPressed: () => Navigator.pop(ctx),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          ),
+                        ],
+                      ),
                     ),
-                    child: Icon(
-                        step == 0
-                            ? Icons.settings_outlined
-                            : Icons.shield_outlined,
-                        color: const Color(0xFF1A2F5A),
-                        size: 22),
-                  ),
-                  const SizedBox(width: 12),
-                  Text(
-                    step == 0
-                        ? 'Pengaturan Admin & Akses OTP'
-                        : 'Persetujuan Superadmin',
-                    style: const TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                      color: Color(0xFF1A2F5A),
+                    // ── Body ────────────────────────────────────────
+                    Flexible(
+                      child: SingleChildScrollView(
+                        padding: const EdgeInsets.all(20),
+                        child: step == 0 ? buildStep0() : buildStep1(),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-              content: SizedBox(
-                width: 460,
-                child: step == 0 ? buildStep0() : buildStep1(),
+                  ],
+                ),
               ),
             );
           },
@@ -3822,13 +3864,23 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                 child: Text('Instansi "${_searchController.text}" tidak ditemukan',
                                     style: const TextStyle(color: Color(0xFF4A5568), fontSize: 14)),
                               )
-                            : GridView.builder(
-                                gridDelegate: const SliverGridDelegateWithMaxCrossAxisExtent(
-                                  maxCrossAxisExtent: 380,
-                                  mainAxisExtent: 230,
-                                  crossAxisSpacing: 16,
-                                  mainAxisSpacing: 16,
-                                ),
+                            : LayoutBuilder(
+                                builder: (context, constraints) {
+                                  final w = constraints.maxWidth;
+                                  // HP: 1 kolom, Tablet: 2 kolom, Desktop: 3+ kolom
+                                  final crossAxisCount = w < 420
+                                      ? 1
+                                      : w < 700
+                                          ? 2
+                                          : (w / 380).floor().clamp(2, 4);
+                                  final cardHeight = w < 420 ? 200.0 : 230.0;
+                                  return GridView.builder(
+                                      gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
+                                        crossAxisCount: crossAxisCount,
+                                        mainAxisExtent: cardHeight,
+                                        crossAxisSpacing: 16,
+                                        mainAxisSpacing: 16,
+                                      ),
                                 itemCount: filteredAgencies.length,
                                 itemBuilder: (context, index) {
                                   final agency = filteredAgencies[index];
@@ -3971,6 +4023,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                       ),
                                     ),
                                   );
+                                    );
                                 },
                               ),
                   ),
