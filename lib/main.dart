@@ -3019,11 +3019,10 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                         });
 
                                         // Tambahkan superadmin baru ke allowed_emails
-                                        allowedEmailsCtrl.text =
-                                            '${allowedEmailsCtrl.text}, $newSuper';
-                                        final cleanAllowed = allowedEmailsCtrl
-                                            .text
-                                            .split(RegExp(r'[,\r\n]+'))
+                                        if (!existingEmails.contains(newSuper)) {
+                                          existingEmails = [...existingEmails, newSuper];
+                                        }
+                                        final cleanAllowed = existingEmails
                                             .map((e) => e.trim().toLowerCase())
                                             .where((e) => e.isNotEmpty)
                                             .toSet()
