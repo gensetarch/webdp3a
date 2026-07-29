@@ -2303,6 +2303,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
 
     String currentSuperadminEmail = 'bayubabayo780@gmail.com';
     List<String> existingEmails = []; // Daftar email yang sudah terdaftar
+    Set<String> emailsToDelete = {}; // Email yang dipilih untuk dihapus
     int selectedTab = 0; // 0=Email Akses OTP, 1=Ganti Superadmin
     int step = 0; // 0=Form Edit, 1=Verifikasi OTP Superadmin
     bool isSaving = false;
@@ -2470,38 +2471,173 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                               spacing: 6,
                               runSpacing: 6,
                               children: existingEmails
-                                  .map((email) => Container(
-                                        padding: const EdgeInsets.symmetric(
-                                            horizontal: 10, vertical: 5),
-                                        decoration: BoxDecoration(
-                                          color: const Color(0xFF1A2F5A).withOpacity(0.08),
-                                          borderRadius: BorderRadius.circular(20),
-                                          border: Border.all(
-                                              color: const Color(0xFF1A2F5A)
-                                                  .withOpacity(0.2)),
-                                        ),
-                                        child: Row(
-                                          mainAxisSize: MainAxisSize.min,
-                                          children: [
-                                            const Icon(
-                                                Icons.mark_email_read_outlined,
-                                                size: 13,
-                                                color: Color(0xFF1A2F5A)),
-                                            const SizedBox(width: 5),
-                                            Text(
-                                              email,
-                                              style: const TextStyle(
-                                                  fontSize: 11.5,
-                                                  color: Color(0xFF1A2F5A),
-                                                  fontWeight: FontWeight.w500),
+                                  .map((email) {
+                                    final isMarked = emailsToDelete.contains(email);
+                                    return Container(
+                                      padding: const EdgeInsets.only(
+                                          left: 10, right: 4, top: 4, bottom: 4),
+                                      decoration: BoxDecoration(
+                                        color: isMarked
+                                            ? const Color(0xFFE53E3E).withOpacity(0.08)
+                                            : const Color(0xFF1A2F5A).withOpacity(0.08),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(
+                                            color: isMarked
+                                                ? const Color(0xFFE53E3E).withOpacity(0.4)
+                                                : const Color(0xFF1A2F5A).withOpacity(0.2)),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(
+                                              isMarked
+                                                  ? Icons.cancel_outlined
+                                                  : Icons.mark_email_read_outlined,
+                                              size: 13,
+                                              color: isMarked
+                                                  ? const Color(0xFFE53E3E)
+                                                  : const Color(0xFF1A2F5A)),
+                                          const SizedBox(width: 5),
+                                          Text(
+                                            email,
+                                            style: TextStyle(
+                                                fontSize: 11.5,
+                                                color: isMarked
+                                                    ? const Color(0xFFE53E3E)
+                                                    : const Color(0xFF1A2F5A),
+                                                fontWeight: FontWeight.w500,
+                                                decoration: isMarked
+                                                    ? TextDecoration.lineThrough
+                                                    : null),
+                                          ),
+                                          const SizedBox(width: 4),
+                                          // Tombol toggle hapus
+                                          InkWell(
+                                            borderRadius: BorderRadius.circular(12),
+                                            onTap: () => setDlg(() {
+                                              if (isMarked) {
+                                                emailsToDelete.remove(email);
+                                              } else {
+                                                emailsToDelete.add(email);
+                                              }
+                                              dialogError = null;
+                                            }),
+                                            child: Padding(
+                                              padding: const EdgeInsets.all(2),
+                                              child: Icon(
+                                                isMarked ? Icons.undo : Icons.close,
+                                                size: 14,
+                                                color: isMarked
+                                                    ? const Color(0xFFB45309)
+                                                    : Colors.grey[500],
+                                              ),
                                             ),
-                                          ],
-                                        ),
-                                      ))
+                                          ),
+                                        ],
+                                      ),
+                                    );
+                                  })
                                   .toList(),
                             ),
                     ),
-                    const SizedBox(height: 14),
+                    // Petunjuk
+                    const SizedBox(height: 6),
+                    Text(
+                      'Tekan ✕ pada chip email untuk menandai email yang akan dihapus.',
+                      style: TextStyle(fontSize: 10.5, color: Colors.grey[500]),
+                    ),
+
+                    // Panel konfirmasi hapus — muncul jika ada email dipilih
+                    if (emailsToDelete.isNotEmpty) ...[
+                      const SizedBox(height: 12),
+                      Container(
+                        padding: const EdgeInsets.all(10),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFFFF5F5),
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(color: const Color(0xFFFEB2B2)),
+                        ),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                const Icon(Icons.delete_outline,
+                                    size: 15, color: Color(0xFFE53E3E)),
+                                const SizedBox(width: 6),
+                                Text(
+                                  'Akan Dihapus (${emailsToDelete.length} email):',
+                                  style: const TextStyle(
+                                      fontSize: 12,
+                                      fontWeight: FontWeight.bold,
+                                      color: Color(0xFFE53E3E)),
+                                ),
+                              ],
+                            ),
+                            const SizedBox(height: 6),
+                            ...emailsToDelete.map((e) => Padding(
+                                  padding: const EdgeInsets.only(top: 2),
+                                  child: Text('• $e',
+                                      style: const TextStyle(
+                                          fontSize: 11.5,
+                                          color: Color(0xFFC53030))),
+                                )),
+                            const SizedBox(height: 8),
+                            SizedBox(
+                              width: double.infinity,
+                              child: ElevatedButton.icon(
+                                onPressed: isSaving
+                                    ? null
+                                    : () async {
+                                        setDlg(() {
+                                          isSaving = true;
+                                          dialogError = null;
+                                        });
+                                        // Hitung email setelah dihapus
+                                        final afterDelete = existingEmails
+                                            .where((e) => !emailsToDelete.contains(e))
+                                            .toList();
+                                        pendingActionType = 'delete_emails';
+                                        pendingNewValue = afterDelete.join(', ');
+
+                                        try {
+                                          await Supabase.instance.client.auth
+                                              .signInWithOtp(
+                                            email: currentSuperadminEmail,
+                                            shouldCreateUser: true,
+                                            emailRedirectTo:
+                                                'https://gensetarch.github.io/webdp3a',
+                                          );
+                                          setDlg(() {
+                                            isSaving = false;
+                                            step = 1;
+                                          });
+                                        } catch (e) {
+                                          setDlg(() {
+                                            isSaving = false;
+                                            dialogError =
+                                                'Gagal mengirim OTP izin ke Superadmin ($currentSuperadminEmail).';
+                                          });
+                                        }
+                                      },
+                                icon: const Icon(Icons.delete_outline, size: 16),
+                                label: Text(
+                                    'Hapus ${emailsToDelete.length} Email (Perlu OTP Superadmin)'),
+                                style: ElevatedButton.styleFrom(
+                                  backgroundColor: const Color(0xFFE53E3E),
+                                  foregroundColor: Colors.white,
+                                  padding: const EdgeInsets.symmetric(
+                                      horizontal: 12, vertical: 10),
+                                  shape: RoundedRectangleBorder(
+                                      borderRadius: BorderRadius.circular(8)),
+                                  textStyle: const TextStyle(fontSize: 12),
+                                ),
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
 
                     // Input email baru
                     const Text(
@@ -2748,9 +2884,15 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
 
             // ── Step 1: OTP Verifikasi Izin Superadmin ───────────────
             Widget buildStep1() {
-              final actionText = pendingActionType == 'superadmin'
-                  ? 'Penggantian Superadmin Baru:\n$pendingNewValue'
-                  : 'Pembaruan Daftar Email Akses OTP:\n$pendingNewValue';
+              String actionText;
+              if (pendingActionType == 'superadmin') {
+                actionText = 'Penggantian Superadmin Baru:\n$pendingNewValue';
+              } else if (pendingActionType == 'delete_emails') {
+                final deleted = emailsToDelete.join(', ');
+                actionText = 'Hapus Email dari Daftar Akses OTP:\n$deleted';
+              } else {
+                actionText = 'Penambahan Email Akses OTP Baru:\n$pendingNewValue';
+              }
 
               return Column(
                 mainAxisSize: MainAxisSize.min,
@@ -2882,8 +3024,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                     );
 
                                     // OTP Valid -> Simpan pengaturan ke Supabase
-                                    if (isSupabaseConfigured &&
-                                        pendingNewValue != null) {
+                                    if (isSupabaseConfigured) {
                                       if (pendingActionType == 'superadmin') {
                                         final newSuper =
                                             pendingNewValue!.trim().toLowerCase();
@@ -2910,8 +3051,7 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                           'key': 'allowed_emails',
                                           'value': cleanAllowed
                                         });
-                                      } else if (pendingActionType ==
-                                          'allowed_emails') {
+                                      } else if (pendingActionType == 'allowed_emails') {
                                         final cleanAllowed = pendingNewValue!
                                             .split(RegExp(r'[,\r\n]+'))
                                             .map((e) => e.trim().toLowerCase())
@@ -2939,6 +3079,32 @@ class _AgencyListScreenState extends State<AgencyListScreen> {
                                         setDlg(() {
                                           existingEmails = cleanAllowed;
                                           newEmailCtrl.clear();
+                                        });
+                                      } else if (pendingActionType == 'delete_emails') {
+                                        // Hapus email yang dipilih
+                                        final afterDelete = existingEmails
+                                            .where((e) => !emailsToDelete.contains(e))
+                                            .toList();
+
+                                        await Supabase.instance.client
+                                            .from('admin_settings')
+                                            .upsert({
+                                          'key': 'allowed_emails',
+                                          'value': afterDelete.join(', ')
+                                        });
+
+                                        if (afterDelete.isNotEmpty) {
+                                          await Supabase.instance.client
+                                              .from('admin_settings')
+                                              .upsert({
+                                            'key': 'admin_email',
+                                            'value': afterDelete.first
+                                          });
+                                        }
+
+                                        setDlg(() {
+                                          existingEmails = afterDelete;
+                                          emailsToDelete.clear();
                                         });
                                       }
                                     }
